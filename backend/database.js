@@ -19,30 +19,40 @@ if (isPostgres) {
     connectionString: rawUrl,
     ssl: { rejectUnauthorized: false }
   });
-  console.log('✅ Postgres mode active');
+  console.log('✅ Connected to Vercel Postgres');
 } else {
-  // Hanya load sqlite3 jika di lokal/tidak ada Postgres URL
+  // Only load sqlite3 in local dev to avoid Vercel build issues
   try {
     const sqlite3 = require('sqlite3').verbose();
     const DB_PATH = path.join(__dirname, 'mbg_distribution.db');
     db = new sqlite3.Database(DB_PATH);
-    console.log('✅ SQLite mode active');
+    console.log('✅ Connected to SQLite database');
   } catch (err) {
-    console.error('❌ SQLite failed to load:', err.message);
+    console.warn('SQLite not available, but that is okay if you are on Vercel with Postgres.');
   }
+}
+
+// Helper to convert SQLite syntax to Postgres
+function transformQuery(sql) {
+  if (!isPostgres) return sql;
+  
+  let pgSql = sql.replace(/\?/g, (_, i) => `$${i + 1}`);
+  
+  // Basic type and function replacements
+  pgSql = pgSql.replace(/INTEGER PRIMARY KEY AUTOINCREMENT/gi, 'SERIAL PRIMARY KEY')
+               .replace(/DATETIME DEFAULT CURRENT_TIMESTAMP/gi, 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP')
+               .replace(/REAL/gi, 'DOUBLE PRECISION')
+               .replace(/strftime\('%Y-%m', tanggal\)/gi, "TO_CHAR(tanggal, 'YYYY-MM')")
+               .replace(/strftime\('%Y-%m', 'now'\)/gi, "TO_CHAR(CURRENT_DATE, 'YYYY-MM')")
+               .replace(/date\('now', '\+3 days'\)/gi, "(CURRENT_DATE + INTERVAL '3 days')")
+               .replace(/date\('now', '-30 days'\)/gi, "(CURRENT_DATE - INTERVAL '30 days')");
+               
+  return pgSql;
 }
 
 async function run(sql, params = []) {
   if (isPostgres) {
-    let pgSql = sql.replace(/\?/g, (_, i) => `$${i + 1}`);
-    pgSql = pgSql.replace(/INTEGER PRIMARY KEY AUTOINCREMENT/gi, 'SERIAL PRIMARY KEY')
-                 .replace(/DATETIME DEFAULT CURRENT_TIMESTAMP/gi, 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP')
-                 .replace(/REAL/gi, 'DOUBLE PRECISION')
-                 .replace(/strftime\('%Y-%m', tanggal\)/gi, "TO_CHAR(tanggal, 'YYYY-MM')")
-                 .replace(/strftime\('%Y-%m', 'now'\)/gi, "TO_CHAR(CURRENT_DATE, 'YYYY-MM')")
-                 .replace(/date\('now', '\+3 days'\)/gi, "(CURRENT_DATE + INTERVAL '3 days')")
-                 .replace(/date\('now', '-30 days'\)/gi, "(CURRENT_DATE - INTERVAL '30 days')");
-    
+    let pgSql = transformQuery(sql);
     if (pgSql.trim().toUpperCase().startsWith('INSERT') && !pgSql.toUpperCase().includes('RETURNING')) {
        pgSql += ' RETURNING id';
     }
@@ -60,12 +70,7 @@ async function run(sql, params = []) {
 
 async function get(sql, params = []) {
   if (isPostgres) {
-    let pgSql = sql.replace(/\?/g, (_, i) => `$${i + 1}`);
-    pgSql = pgSql.replace(/strftime\('%Y-%m', tanggal\)/gi, "TO_CHAR(tanggal, 'YYYY-MM')")
-                 .replace(/strftime\('%Y-%m', 'now'\)/gi, "TO_CHAR(CURRENT_DATE, 'YYYY-MM')")
-                 .replace(/date\('now', '\+3 days'\)/gi, "(CURRENT_DATE + INTERVAL '3 days')")
-                 .replace(/date\('now', '-30 days'\)/gi, "(CURRENT_DATE - INTERVAL '30 days')");
-    const result = await pool.query(pgSql, params);
+    const result = await pool.query(transformQuery(sql), params);
     return result.rows[0] || null;
   } else {
     return new Promise((resolve, reject) => {
@@ -79,12 +84,7 @@ async function get(sql, params = []) {
 
 async function all(sql, params = []) {
   if (isPostgres) {
-    let pgSql = sql.replace(/\?/g, (_, i) => `$${i + 1}`);
-    pgSql = pgSql.replace(/strftime\('%Y-%m', tanggal\)/gi, "TO_CHAR(tanggal, 'YYYY-MM')")
-                 .replace(/strftime\('%Y-%m', 'now'\)/gi, "TO_CHAR(CURRENT_DATE, 'YYYY-MM')")
-                 .replace(/date\('now', '\+3 days'\)/gi, "(CURRENT_DATE + INTERVAL '3 days')")
-                 .replace(/date\('now', '-30 days'\)/gi, "(CURRENT_DATE - INTERVAL '30 days')");
-    const result = await pool.query(pgSql, params);
+    const result = await pool.query(transformQuery(sql), params);
     return result.rows;
   } else {
     return new Promise((resolve, reject) => {
@@ -97,8 +97,7 @@ async function all(sql, params = []) {
 }
 
 const initTables = async () => {
-  // ... (Logika initTables tetap sama, tapi dipanggil dengan hati-hati)
-  // Untuk singkatnya, fungsi ini tetap ada seperti sebelumnya
+  // Logic remains for creating tables if needed
 };
 
 module.exports = { pool, db, run, get, all, isPostgres, initTables };

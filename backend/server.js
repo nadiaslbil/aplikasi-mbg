@@ -25,7 +25,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // 2. IMPORT DATABASE & MIDDLEWARE
-const { db, run, get, all, isPostgres } = require('./database');
+const { pool, db, run, get, all, isPostgres } = require('./database');
 const { upload, handleMulterError } = require('./middleware/upload');
 const { requireRole } = require('./middleware/rbac');
 
@@ -57,40 +57,21 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-// ============ ROUTES ============
-
-// Health check
+// ============ AUTH ROUTES ============
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', database: isPostgres ? 'postgres' : 'sqlite' });
-});
-
-app.post('/api/upload', 
-  authenticateToken, 
-  requireRole(['admin_bgn', 'admin_daerah', 'kurir']),
-  upload.single('file'), 
-  handleMulterError, 
-  async (req, res) => {
-  try {
-    if (!req.file) return res.status(400).json({ error: 'Tidak ada file' });
-    res.status(201).json({
-      message: 'File berhasil diupload',
-      filename: req.file.filename,
-      url: `/uploads/${req.file.filename}`
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Upload error' });
-  }
 });
 
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ error: 'Data tidak lengkap' });
+    if (!email || !password) return res.status(400).json({ error: 'Email dan password wajib diisi' });
 
     const user = await get('SELECT * FROM users WHERE email = ?', [email]);
-    if (!user || !bcrypt.compareSync(password, user.password_hash)) {
-      return res.status(401).json({ error: 'Email atau password salah' });
-    }
+    if (!user) return res.status(401).json({ error: 'Email atau password salah' });
+
+    const passwordMatch = bcrypt.compareSync(password, user.password_hash);
+    if (!passwordMatch) return res.status(401).json({ error: 'Email atau password salah' });
 
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role, nama: user.nama },
@@ -104,13 +85,15 @@ app.post('/api/auth/login', async (req, res) => {
       user: { id: user.id, nama: user.nama, email: user.email, role: user.role },
     });
   } catch (error) {
-    res.status(500).json({ error: 'Server error: ' + error.message });
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Terjadi kesalahan server: ' + error.message });
   }
 });
 
+// ============ SEKOLAH ROUTES ============
 app.get('/api/sekolah', authenticateToken, async (req, res) => {
   try {
-    const { kecamatan, status, search } = req.query;
+    const { kecamatan, kabupaten, status, search } = req.query;
     let query = `SELECT * FROM sekolah WHERE 1=1`;
     const params = [];
 
@@ -124,6 +107,36 @@ app.get('/api/sekolah', authenticateToken, async (req, res) => {
     if (search) { query += ' AND (nama LIKE ? OR alamat LIKE ?)'; params.push(`%${search}%`, `%${search}%`); }
     query += ' ORDER BY nama ASC';
 
+    const sekolah = await all(query, params);
+    res.json(sekolah);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============ DAPUR ROUTES ============
+app.get('/api/dapur', authenticateToken, async (req, res) => {
+  try {
+    const results = await all('SELECT * FROM dapur_supplier ORDER BY nama ASC');
+    res.json(results);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============ JADWAL ROUTES ============
+app.get('/api/jadwal', authenticateToken, async (req, res) => {
+  try {
+    const { tanggal, status } = req.query;
+    let query = `SELECT jd.*, ds.nama as dapur_nama, s.nama as sekolah_nama 
+                 FROM jadwal_distribusi jd 
+                 JOIN dapur_supplier ds ON jd.dapur_id = ds.id 
+                 JOIN sekolah s ON jd.sekolah_id = s.id 
+                 WHERE 1=1`;
+    const params = [];
+    if (tanggal) { query += ' AND jd.tanggal = ?'; params.push(tanggal); }
+    if (status) { query += ' AND jd.status = ?'; params.push(status); }
+    query += ' ORDER BY jd.tanggal ASC';
     const results = await all(query, params);
     res.json(results);
   } catch (error) {
@@ -131,22 +144,15 @@ app.get('/api/sekolah', authenticateToken, async (req, res) => {
   }
 });
 
-// Helper for other routes (to keep it clean but functional)
-app.get('/api/dapur', authenticateToken, async (req, res) => {
-  try {
-    const results = await all('SELECT * FROM dapur_supplier ORDER BY nama ASC');
-    res.json(results);
-  } catch (error) { res.status(500).json({ error: error.message }); }
-});
-
+// ============ DASHBOARD STATS ============
 app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0];
     const totalSekolah = await get('SELECT COUNT(*) as count FROM sekolah WHERE status = ?', ['aktif']);
     const totalDapur = await get('SELECT COUNT(*) as count FROM dapur_supplier WHERE status = ?', ['aktif']);
     
-    // Use the postgres-compatible date logic
-    const pengirimanBulanIni = await get(`SELECT COUNT(*) as count FROM jadwal_distribusi WHERE ${isPostgres ? "TO_CHAR(tanggal, 'YYYY-MM') = TO_CHAR(CURRENT_DATE, 'YYYY-MM')" : "strftime('%Y-%m', tanggal) = strftime('%Y-%m', 'now')"}`);
+    // SQLite: strftime, Postgres: TO_CHAR (handled by our database.js transformQuery)
+    const pengirimanBulanIni = await get(`SELECT COUNT(*) as count FROM jadwal_distribusi WHERE strftime('%Y-%m', tanggal) = strftime('%Y-%m', 'now')`);
 
     res.json({
       today,
@@ -162,12 +168,11 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
   }
 });
 
-// Socket.io for real-time tracking
+// ============ SOCKET.IO ============
 io.on('connection', (socket) => {
   socket.on('courier-location', (data) => {
     io.emit('courier-update', { ...data, timestamp: new Date().toISOString() });
   });
-  socket.on('disconnect', () => {});
 });
 
 app.set('io', io);
