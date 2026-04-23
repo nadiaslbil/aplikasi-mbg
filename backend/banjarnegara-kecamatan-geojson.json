@@ -1,0 +1,327 @@
+{
+  "type": "FeatureCollection",
+  "name": "Kecamatan_Banjarnegara",
+  "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:EPSG::4326" } },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "OBJECTID": 1,
+        "WADMKC": "Banjarnegara",
+        "WADMKK": "Banjarnegara",
+        "WADMPR": "Jawa Tengah",
+        "KDPKAB": "33.04",
+        "JUMLAH_DESA": 24,
+        "LUAS_KM2": 46.52
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[109.67, -7.37], [109.69, -7.36], [109.70, -7.37], [109.69, -7.39], [109.67, -7.38], [109.67, -7.37]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "OBJECTID": 2,
+        "WADMKC": "Sigaluh",
+        "WADMKK": "Banjarnegara",
+        "WADMPR": "Jawa Tengah",
+        "KDPKAB": "33.04",
+        "JUMLAH_DESA": 18,
+        "LUAS_KM2": 63.40
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[109.62, -7.37], [109.65, -7.36], [109.67, -7.37], [109.67, -7.38], [109.65, -7.39], [109.62, -7.38], [109.62, -7.37]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "OBJECTID": 3,
+        "WADMKC": "Madukara",
+        "WADMKK": "Banjarnegara",
+        "WADMPR": "Jawa Tengah",
+        "KDPKAB": "33.04",
+        "JUMLAH_DESA": 20,
+        "LUAS_KM2": 75.80
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[109.57, -7.38], [109.60, -7.37], [109.62, -7.37], [109.62, -7.38], [109.60, -7.39], [109.57, -7.39], [109.57, -7.38]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "OBJECTID": 4,
+        "WADMKC": "Banjarmangu",
+        "WADMKK": "Banjarnegara",
+        "WADMPR": "Jawa Tengah",
+        "KDPKAB": "33.04",
+        "JUMLAH_DESA": 16,
+        "LUAS_KM2": 58.20
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[109.67, -7.34], [109.70, -7.33], [109.72, -7.34], [109.70, -7.36], [109.67, -7.35], [109.67, -7.34]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "OBJECTID": 5,
+        "WADMKC": "Wanadadi",
+        "WADMKK": "Banjarnegara",
+        "WADMPR": "Jawa Tengah",
+        "KDPKAB": "33.04",
+        "JUMLAH_DESA": 14,
+        "LUAS_KM2": 52.30
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[109.60, -7.34], [109.63, -7.33], [109.65, -7.34], [109.65, -7.36], [109.62, -7.36], [109.60, -7.35], [109.60, -7.34]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "OBJECTID": 6,
+        "WADMKC": "Rakit",
+        "WADMKK": "Banjarnegara",
+        "WADMPR": "Jawa Tengah",
+        "KDPKAB": "33.04",
+        "JUMLAH_DESA": 12,
+        "LUAS_KM2": 48.90
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[109.52, -7.35], [109.55, -7.34], [109.57, -7.35], [109.57, -7.37], [109.55, -7.38], [109.52, -7.36], [109.52, -7.35]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "OBJECTID": 7,
+        "WADMKC": "Punggelan",
+        "WADMKK": "Banjarnegara",
+        "WADMPR": "Jawa Tengah",
+        "KDPKAB": "33.04",
+        "JUMLAH_DESA": 15,
+        "LUAS_KM2": 67.50
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[109.48, -7.30], [109.52, -7.29], [109.54, -7.30], [109.52, -7.33], [109.48, -7.32], [109.48, -7.30]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "OBJECTID": 8,
+        "WADMKC": "Karangkobar",
+        "WADMKK": "Banjarnegara",
+        "WADMPR": "Jawa Tengah",
+        "KDPKAB": "33.04",
+        "JUMLAH_DESA": 13,
+        "LUAS_KM2": 72.10
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[109.52, -7.26], [109.55, -7.25], [109.57, -7.26], [109.55, -7.28], [109.52, -7.27], [109.52, -7.26]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "OBJECTID": 9,
+        "WADMKC": "Batur",
+        "WADMKK": "Banjarnegara",
+        "WADMPR": "Jawa Tengah",
+        "KDPKAB": "33.04",
+        "JUMLAH_DESA": 11,
+        "LUAS_KM2": 85.40
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[109.60, -7.23], [109.63, -7.22], [109.65, -7.23], [109.63, -7.26], [109.60, -7.25], [109.60, -7.23]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "OBJECTID": 10,
+        "WADMKC": "Pagedongan",
+        "WADMKK": "Banjarnegara",
+        "WADMPR": "Jawa Tengah",
+        "KDPKAB": "33.04",
+        "JUMLAH_DESA": 10,
+        "LUAS_KM2": 42.30
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[109.65, -7.30], [109.68, -7.29], [109.70, -7.30], [109.68, -7.32], [109.65, -7.31], [109.65, -7.30]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "OBJECTID": 11,
+        "WADMKC": "Wanayasa",
+        "WADMKK": "Banjarnegara",
+        "WADMPR": "Jawa Tengah",
+        "KDPKAB": "33.04",
+        "JUMLAH_DESA": 11,
+        "LUAS_KM2": 54.70
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[109.70, -7.30], [109.73, -7.29], [109.75, -7.30], [109.73, -7.32], [109.70, -7.31], [109.70, -7.30]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "OBJECTID": 12,
+        "WADMKC": "Kalibening",
+        "WADMKK": "Banjarnegara",
+        "WADMPR": "Jawa Tengah",
+        "KDPKAB": "33.04",
+        "JUMLAH_DESA": 12,
+        "LUAS_KM2": 61.20
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[109.73, -7.33], [109.76, -7.32], [109.78, -7.33], [109.76, -7.35], [109.73, -7.34], [109.73, -7.33]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "OBJECTID": 13,
+        "WADMKC": "Susukan",
+        "WADMKK": "Banjarnegara",
+        "WADMPR": "Jawa Tengah",
+        "KDPKAB": "33.04",
+        "JUMLAH_DESA": 9,
+        "LUAS_KM2": 38.50
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[109.70, -7.26], [109.73, -7.25], [109.75, -7.26], [109.73, -7.28], [109.70, -7.27], [109.70, -7.26]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "OBJECTID": 14,
+        "WADMKC": "Purwanegara",
+        "WADMKK": "Banjarnegara",
+        "WADMPR": "Jawa Tengah",
+        "KDPKAB": "33.04",
+        "JUMLAH_DESA": 13,
+        "LUAS_KM2": 55.80
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[109.73, -7.37], [109.76, -7.36], [109.78, -7.37], [109.76, -7.39], [109.73, -7.38], [109.73, -7.37]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "OBJECTID": 15,
+        "WADMKC": "Purworejo",
+        "WADMKK": "Banjarnegara",
+        "WADMPR": "Jawa Tengah",
+        "KDPKAB": "33.04",
+        "JUMLAH_DESA": 10,
+        "LUAS_KM2": 44.60
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[109.57, -7.32], [109.60, -7.31], [109.62, -7.32], [109.60, -7.34], [109.57, -7.33], [109.57, -7.32]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "OBJECTID": 16,
+        "WADMKC": "Pejawaran",
+        "WADMKK": "Banjarnegara",
+        "WADMPR": "Jawa Tengah",
+        "KDPKAB": "33.04",
+        "JUMLAH_DESA": 14,
+        "LUAS_KM2": 68.90
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[109.63, -7.26], [109.66, -7.25], [109.68, -7.26], [109.66, -7.28], [109.63, -7.27], [109.63, -7.26]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "OBJECTID": 17,
+        "WADMKC": "Bawang",
+        "WADMKK": "Banjarnegara",
+        "WADMPR": "Jawa Tengah",
+        "KDPKAB": "33.04",
+        "JUMLAH_DESA": 18,
+        "LUAS_KM2": 71.30
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[109.65, -7.37], [109.68, -7.36], [109.70, -7.37], [109.68, -7.39], [109.65, -7.38], [109.65, -7.37]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "OBJECTID": 18,
+        "WADMKC": "Mandiraja",
+        "WADMKK": "Banjarnegara",
+        "WADMPR": "Jawa Tengah",
+        "KDPKAB": "33.04",
+        "JUMLAH_DESA": 16,
+        "LUAS_KM2": 52.70
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[109.55, -7.41], [109.58, -7.40], [109.60, -7.41], [109.58, -7.43], [109.55, -7.42], [109.55, -7.41]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "OBJECTID": 19,
+        "WADMKC": "Purwonegoro",
+        "WADMKK": "Banjarnegara",
+        "WADMPR": "Jawa Tengah",
+        "KDPKAB": "33.04",
+        "JUMLAH_DESA": 8,
+        "LUAS_KM2": 36.40
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[109.55, -7.28], [109.58, -7.27], [109.60, -7.28], [109.58, -7.30], [109.55, -7.29], [109.55, -7.28]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "OBJECTID": 20,
+        "WADMKC": "Pagentan",
+        "WADMKK": "Banjarnegara",
+        "WADMPR": "Jawa Tengah",
+        "KDPKAB": "33.04",
+        "JUMLAH_DESA": 7,
+        "LUAS_KM2": 92.50
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[109.55, -7.22], [109.58, -7.21], [109.60, -7.22], [109.58, -7.24], [109.55, -7.23], [109.55, -7.22]]]
+      }
+    }
+  ]
+}
