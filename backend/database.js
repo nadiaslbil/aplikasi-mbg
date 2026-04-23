@@ -6,47 +6,57 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
-const isPostgres = process.env.POSTGRES_URL || process.env.DATABASE_URL;
+// Ambil URL dan bersihkan dari spasi atau tanda petik yang mungkin terbawa
+let rawUrl = process.env.POSTGRES_URL || process.env.DATABASE_URL;
+if (rawUrl) {
+    rawUrl = rawUrl.replace(/^["']|["']$/g, '').trim();
+}
+
+const isPostgres = !!rawUrl;
 let db;
 let pool;
 
+// SELALU buka koneksi SQLite agar bisa dibaca kapanpun (terutama saat migrasi)
+const DB_PATH = path.join(__dirname, 'mbg_distribution.db');
+db = new sqlite3.Database(DB_PATH, (err) => {
+  if (err) {
+    console.error('Error opening SQLite database:', err);
+  } else {
+    if (!isPostgres) console.log('✅ Connected to SQLite database');
+  }
+});
+
 if (isPostgres) {
-  pool = new Pool({
-    connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL,
-    ssl: {
-      rejectUnauthorized: false
-    }
-  });
-  console.log('✅ Connected to Vercel Postgres');
-} else {
-  const DB_PATH = path.join(__dirname, 'mbg_distribution.db');
-  db = new sqlite3.Database(DB_PATH, (err) => {
-    if (err) {
-      console.error('Error opening SQLite database:', err);
-    } else {
-      console.log('✅ Connected to SQLite database');
-    }
-  });
+  try {
+    pool = new Pool({
+      connectionString: rawUrl,
+      ssl: {
+        rejectUnauthorized: false
+      }
+    });
+    console.log('✅ Connected to Vercel Postgres (Ready)');
+  } catch (err) {
+    console.error('❌ Failed to initialize Postgres Pool:', err.message);
+  }
 }
 
 // Unified methods for both SQLite and Postgres
 async function run(sql, params = []) {
   if (isPostgres) {
-    // Convert SQL placeholders from ? to $1, $2, etc.
     let pgSql = sql;
     let count = 1;
     while (pgSql.includes('?')) {
       pgSql = pgSql.replace('?', `$${count++}`);
     }
     
-    // SQLite uses AUTOINCREMENT, Postgres uses SERIAL/IDENTITY
-    // SQLite uses INTEGER PRIMARY KEY AUTOINCREMENT, Postgres uses SERIAL PRIMARY KEY
     pgSql = pgSql.replace(/INTEGER PRIMARY KEY AUTOINCREMENT/gi, 'SERIAL PRIMARY KEY');
     pgSql = pgSql.replace(/DATETIME DEFAULT CURRENT_TIMESTAMP/gi, 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
     pgSql = pgSql.replace(/REAL/gi, 'DOUBLE PRECISION');
     
-    // Handle INSERT ... RETURNING for lastID equivalent if needed
-    // But for simplicity, we'll just run the query
+    if (pgSql.trim().toUpperCase().startsWith('INSERT') && !pgSql.toUpperCase().includes('RETURNING')) {
+       pgSql += ' RETURNING id';
+    }
+
     const result = await pool.query(pgSql, params);
     return { 
       lastID: result.rows[0]?.id || null, 
@@ -241,7 +251,6 @@ const initTables = async () => {
       await run(query);
     }
 
-    // Create indexes
     const indexQueries = [
       'CREATE INDEX IF NOT EXISTS idx_sekolah_kecamatan ON sekolah(kecamatan)',
       'CREATE INDEX IF NOT EXISTS idx_sekolah_status ON sekolah(status)',
@@ -263,7 +272,6 @@ const initTables = async () => {
     ];
 
     for (const query of indexQueries) {
-      // Postgres handle IF NOT EXISTS for indexes differently or we can just ignore error if exists
       try {
         await run(query);
       } catch (err) {
@@ -271,7 +279,6 @@ const initTables = async () => {
       }
     }
 
-    // Create default admin
     const adminExists = await get('SELECT id FROM users WHERE email = ?', ['admin@mbg.go.id']);
     
     if (!adminExists) {
@@ -280,16 +287,13 @@ const initTables = async () => {
         'INSERT INTO users (nama, email, password_hash, role) VALUES (?, ?, ?, ?)',
         ['Administrator MBG', 'admin@mbg.go.id', hashPassword, 'admin_bgn']
       );
-      console.log('✅ Default admin created: admin@mbg.go.id / admin123');
     }
-
-    console.log('✅ Database tables initialized');
   } catch (error) {
-    console.error('Error initializing database:', error);
+    if (!error.message.includes('Invalid URL')) {
+        console.error('Error during initTables:', error.message);
+    }
   }
 };
 
-// Auto-init tables
-initTables();
-
-module.exports = { pool, db, run, get, all, isPostgres };
+// Ekspor pool agar bisa digunakan di skrip lain
+module.exports = { pool, db, run, get, all, isPostgres, initTables };
