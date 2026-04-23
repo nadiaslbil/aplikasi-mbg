@@ -31,7 +31,13 @@ const io = new Server(server, {
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: true, // Mengizinkan origin yang memanggil
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+app.options('*', cors()); // Tangani preflight request untuk semua route
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
