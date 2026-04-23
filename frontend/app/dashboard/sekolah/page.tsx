@@ -1,0 +1,341 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
+import AdminLayout from '@/components/AdminLayout';
+import api from '@/lib/api';
+import { useForm } from 'react-hook-form';
+import { usePermissions } from '@/hooks/usePermissions';
+import {
+  Plus,
+  Edit,
+  Trash2,
+  X as CloseIcon,
+  Search,
+  School,
+  Store,
+} from 'lucide-react';
+
+interface Sekolah {
+  id: number;
+  nama: string;
+  alamat: string;
+  latitude: number;
+  longitude: number;
+  kecamatan: string;
+  kabupaten: string;
+  provinsi: string;
+  jumlah_siswa: number;
+  kontak: string;
+  status: string;
+  dapur_pembina: string | null; // NEW: Nama dapur yang membina
+}
+
+interface SekolahForm {
+  nama: string;
+  alamat: string;
+  latitude: number;
+  longitude: number;
+  kecamatan: string;
+  kabupaten: string;
+  provinsi: string;
+  jumlah_siswa: number;
+  kontak: string;
+  status: string;
+}
+
+export default function SekolahPage() {
+  const { user, isLoading: authLoading } = useAuth();
+  const { canCreateSekolah, canEditSekolah, canDeleteSekolah } = usePermissions();
+  const router = useRouter();
+  const [sekolahList, setSekolahList] = useState<Sekolah[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [search, setSearch] = useState('');
+
+  // Check if user is kurir or supplier (for info banner)
+  const isKurir = user?.role === 'kurir';
+  const isSupplier = user?.role === 'supplier';
+  const isAdmin = user?.role === 'admin_bgn' || user?.role === 'admin_daerah';
+
+  const { register, handleSubmit, reset, setValue } = useForm<SekolahForm>();
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    fetchSekolah();
+  }, [user, authLoading]);
+
+  const fetchSekolah = async () => {
+    try {
+      const response = await api.get('/sekolah');
+      setSekolahList(response.data);
+    } catch (error) {
+      console.error('Error fetching sekolah:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onSubmit = async (data: SekolahForm) => {
+    try {
+      if (editingId) {
+        await api.put(`/sekolah/${editingId}`, data);
+      } else {
+        await api.post('/sekolah', data);
+      }
+      fetchSekolah();
+      handleCloseForm();
+    } catch (error: any) {
+      alert(error.response?.data?.error || 'Terjadi kesalahan');
+    }
+  };
+
+  const handleEdit = (sekolah: Sekolah) => {
+    setEditingId(sekolah.id);
+    setValue('nama', sekolah.nama);
+    setValue('alamat', sekolah.alamat);
+    setValue('latitude', sekolah.latitude);
+    setValue('longitude', sekolah.longitude);
+    setValue('kecamatan', sekolah.kecamatan);
+    setValue('kabupaten', sekolah.kabupaten);
+    setValue('provinsi', sekolah.provinsi);
+    setValue('jumlah_siswa', sekolah.jumlah_siswa);
+    setValue('kontak', sekolah.kontak);
+    setValue('status', sekolah.status);
+    setShowForm(true);
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Yakin ingin menghapus sekolah ini?')) return;
+    try {
+      await api.delete(`/sekolah/${id}`);
+      fetchSekolah();
+    } catch (error: any) {
+      alert(error.response?.data?.error || 'Terjadi kesalahan');
+    }
+  };
+
+  const handleCloseForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    reset();
+  };
+
+  const filteredSekolah = sekolahList.filter((s) =>
+    s.nama.toLowerCase().includes(search.toLowerCase()) ||
+    s.alamat.toLowerCase().includes(search.toLowerCase()) ||
+    s.kecamatan.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <AdminLayout
+      currentPage="/dashboard/sekolah"
+      title="Data Sekolah"
+      description={isKurir || isSupplier ? `Sekolah binaan dari dapur Anda (${user?.role === 'kurir' ? 'Kurir' : 'Supplier'})` : "Kelola data sekolah penerima MBG di Banjarnegara"}
+    >
+      {/* Info Banner for Non-Admin */}
+      {(isKurir || isSupplier) && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 flex items-start gap-3">
+          <Store size={20} className="text-blue-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <h3 className="font-semibold text-blue-800">Mode Tampilan: Sekolah Binaan</h3>
+            <p className="text-sm text-blue-700 mt-1">
+              Anda hanya melihat sekolah yang dibina oleh dapur Anda. Hubungi admin untuk melihat semua sekolah.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Action bar */}
+      <div className="filter-bar">
+        {canCreateSekolah && (
+          <button
+            onClick={() => {
+              setEditingId(null);
+              reset({
+                nama: '', alamat: '', latitude: 0, longitude: 0,
+                kecamatan: '', kabupaten: 'Banjarnegara', provinsi: 'Jawa Tengah',
+                jumlah_siswa: 0, kontak: '', status: 'aktif',
+              });
+              setShowForm(true);
+            }}
+            className="btn-primary"
+          >
+            <Plus size={16} />
+            Tambah Sekolah
+          </button>
+        )}
+        <div className="relative flex-1 max-w-xs ml-auto">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+          <input
+            type="text"
+            placeholder="Cari sekolah..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="input pl-9"
+          />
+        </div>
+      </div>
+
+      {/* Form Panel */}
+      {showForm && (
+        <div className="panel animate-fadeIn">
+          <div className="panel-header">
+            <h2 className="panel-title">{editingId ? 'Edit Sekolah' : 'Tambah Sekolah Baru'}</h2>
+            <button onClick={handleCloseForm} className="btn-icon">
+              <CloseIcon size={18} />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <div className="form-grid">
+              <div>
+                <label className="form-label">Nama Sekolah</label>
+                <input {...register('nama', { required: true })} className="input" placeholder="SDN 1 Banjarnegara" />
+              </div>
+              <div>
+                <label className="form-label">Kontak</label>
+                <input {...register('kontak')} className="input" placeholder="0286-xxxxxx" />
+              </div>
+              <div className="md:col-span-2">
+                <label className="form-label">Alamat</label>
+                <input {...register('alamat', { required: true })} className="input" placeholder="Jl. Contoh No. 123" />
+              </div>
+              <div>
+                <label className="form-label">Kecamatan</label>
+                <input {...register('kecamatan', { required: true })} className="input" placeholder="Banjarnegara" />
+              </div>
+              <div>
+                <label className="form-label">Kabupaten</label>
+                <input {...register('kabupaten', { required: true })} className="input" defaultValue="Banjarnegara" />
+              </div>
+              <div>
+                <label className="form-label">Provinsi</label>
+                <input {...register('provinsi', { required: true })} className="input" defaultValue="Jawa Tengah" />
+              </div>
+              <div>
+                <label className="form-label">Jumlah Siswa</label>
+                <input {...register('jumlah_siswa', { valueAsNumber: true })} type="number" className="input" placeholder="100" />
+              </div>
+              <div>
+                <label className="form-label">Latitude</label>
+                <input {...register('latitude', { required: true, valueAsNumber: true })} type="number" step="any" className="input" placeholder="-7.3511" />
+              </div>
+              <div>
+                <label className="form-label">Longitude</label>
+                <input {...register('longitude', { required: true, valueAsNumber: true })} type="number" step="any" className="input" placeholder="109.5875" />
+              </div>
+              <div>
+                <label className="form-label">Status</label>
+                <select {...register('status')} className="select">
+                  <option value="aktif">Aktif</option>
+                  <option value="nonaktif">Nonaktif</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-2 justify-end mt-5 pt-5 border-t border-zinc-200/80">
+              <button type="button" onClick={handleCloseForm} className="btn-secondary">Batal</button>
+              <button type="submit" className="btn-primary">{editingId ? 'Update' : 'Simpan'}</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Table */}
+      <div className="table-container">
+        <div className="overflow-x-auto">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Nama Sekolah</th>
+                <th>Kecamatan</th>
+                <th className="hidden md:table-cell">Alamat</th>
+                <th className="hidden lg:table-cell">Dapur Pembina</th>
+                <th className="text-right">Siswa</th>
+                <th className="hidden lg:table-cell">Kontak</th>
+                <th>Status</th>
+                <th className="text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="text-center py-12">
+                    <div className="loading-spinner">
+                      <div className="loading-spinner-inner">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                        <p className="text-sm text-zinc-500">Memuat data...</p>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredSekolah.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="text-center py-12">
+                    <div className="empty-state">
+                      <div className="empty-state-icon">
+                        <School size={24} />
+                      </div>
+                      <p className="empty-state-title">Tidak ada data sekolah</p>
+                      <p className="empty-state-text">{isKurir || isSupplier ? 'Tidak ada sekolah yang dibina oleh dapur Anda' : 'Klik "Tambah Sekolah" untuk menambahkan data baru'}</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredSekolah.map((sekolah) => (
+                  <tr key={sekolah.id}>
+                    <td className="font-medium text-zinc-900">{sekolah.nama}</td>
+                    <td>{sekolah.kecamatan}</td>
+                    <td className="hidden md:table-cell max-w-[200px] truncate">{sekolah.alamat}</td>
+                    <td className="hidden lg:table-cell">
+                      {sekolah.dapur_pembina ? (
+                        <div className="flex flex-wrap gap-1">
+                          {sekolah.dapur_pembina.split(',').map((dapur, idx) => (
+                            <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-700 rounded text-xs font-medium">
+                              <Store size={10} />
+                              {dapur.trim()}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-zinc-400 text-xs italic">Belum ada</span>
+                      )}
+                    </td>
+                    <td className="text-right font-medium">{sekolah.jumlah_siswa.toLocaleString('id-ID')}</td>
+                    <td className="hidden lg:table-cell text-zinc-500">{sekolah.kontak || '-'}</td>
+                    <td>
+                      <span className={`badge ${sekolah.status === 'aktif' ? 'badge-green' : 'badge-red'}`}>
+                        {sekolah.status}
+                      </span>
+                    </td>
+                    <td className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        {canEditSekolah && (
+                          <button onClick={() => handleEdit(sekolah)} className="btn-icon" title="Edit">
+                            <Edit size={16} />
+                          </button>
+                        )}
+                        {canDeleteSekolah && (
+                          <button onClick={() => handleDelete(sekolah.id)} className="btn-icon-danger" title="Hapus">
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </AdminLayout>
+  );
+}
