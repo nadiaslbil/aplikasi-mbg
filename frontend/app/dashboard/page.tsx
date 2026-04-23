@@ -38,32 +38,6 @@ export default function DashboardPage() {
   const router = useRouter();
   const [stats, setStats] = useState<DashboardStats | null>(null);
 
-  useEffect(() => {
-    if (isLoading) return;
-    if (!user) {
-      router.push('/login');
-      return;
-    }
-
-    // Redirect non-admin users to their respective dashboards
-    if (user.role === 'kurir') {
-      router.replace('/dashboard/kurir');
-      return;
-    }
-    if (user.role === 'supplier') {
-      router.replace('/dashboard/supplier');
-      return;
-    }
-
-    // Only allow admin_bgn and admin_daerah
-    if (user.role !== 'admin_bgn' && user.role !== 'admin_daerah') {
-      router.replace('/dashboard/kurir'); // Fallback
-      return;
-    }
-
-    fetchStats();
-  }, [user, isLoading]);
-
   const fetchStats = async () => {
     try {
       const response = await api.get('/dashboard/stats');
@@ -72,6 +46,8 @@ export default function DashboardPage() {
       console.error('Error fetching stats:', error);
     }
   };
+
+  useEffect(() => {
 
   return (
     <AdminLayout

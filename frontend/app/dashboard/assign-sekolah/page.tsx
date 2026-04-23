@@ -283,7 +283,7 @@ export default function AssignSekolahPage() {
             </div>
           ) : relationsArray.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
-              Belum ada penugasan sekolah. Klik "Tambah Penugasan" untuk memulai.
+              Belum ada penugasan sekolah. Klik &quot;Tambah Penugasan&quot; untuk memulai.
             </div>
           ) : (
             <div className="overflow-x-auto">

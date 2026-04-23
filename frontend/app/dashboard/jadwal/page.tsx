@@ -310,7 +310,7 @@ export default function JadwalPage() {
               {loading ? (
                 <tr><td colSpan={8} className="text-center py-12"><div className="loading-spinner"><div className="loading-spinner-inner"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div><p className="text-sm text-zinc-500">Memuat data...</p></div></div></td></tr>
               ) : jadwalList.length === 0 ? (
-                <tr><td colSpan={8} className="text-center py-12"><div className="empty-state"><div className="empty-state-icon"><Calendar size={24} /></div><p className="empty-state-title">Tidak ada jadwal</p><p className="empty-state-text">Klik "Tambah Jadwal" untuk membuat jadwal baru</p></div></td></tr>
+                <tr><td colSpan={8} className="text-center py-12"><div className="empty-state"><div className="empty-state-icon"><Calendar size={24} /></div><p className="empty-state-title">Tidak ada jadwal</p><p className="empty-state-text">Klik &quot;Tambah Jadwal&quot; untuk membuat jadwal baru</p></div></td></tr>
               ) : (
                 jadwalList.map((jadwal) => (
                   <tr key={jadwal.id}>
@@ -474,7 +474,7 @@ export default function JadwalPage() {
                   <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="text-sm font-medium text-amber-800">Beberapa jadwal belum ada kurir</p>
-                    <p className="text-xs text-amber-700 mt-1">Assign kurir ke dapur terlebih dahulu di menu "Assign Kurir"</p>
+                    <p className="text-xs text-amber-700 mt-1">Assign kurir ke dapur terlebih dahulu di menu &quot;Assign Kurir&quot;</p>
                   </div>
                 </div>
               )}

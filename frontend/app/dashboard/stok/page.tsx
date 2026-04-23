@@ -246,7 +246,7 @@ export default function StokPage() {
               {loading ? (
                 <tr><td colSpan={6} className="text-center py-12"><div className="loading-spinner"><div className="loading-spinner-inner"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div><p className="text-sm text-zinc-500">Memuat data...</p></div></div></td></tr>
               ) : filteredStok.length === 0 ? (
-                <tr><td colSpan={6} className="text-center py-12"><div className="empty-state"><div className="empty-state-icon"><Package size={24} /></div><p className="empty-state-title">Tidak ada stok bahan</p><p className="empty-state-text">Klik "Tambah Stok" untuk menambahkan bahan baru</p></div></td></tr>
+                <tr><td colSpan={6} className="text-center py-12"><div className="empty-state"><div className="empty-state-icon"><Package size={24} /></div><p className="empty-state-title">Tidak ada stok bahan</p><p className="empty-state-text">Klik &quot;Tambah Stok&quot; untuk menambahkan bahan baru</p></div></td></tr>
               ) : (
                 filteredStok.map((stok) => {
                   const expired = isExpired(stok.expired_date);

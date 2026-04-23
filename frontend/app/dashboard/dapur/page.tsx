@@ -241,7 +241,7 @@ export default function DapurPage() {
               {loading ? (
                 <tr><td colSpan={7} className="text-center py-12"><div className="loading-spinner"><div className="loading-spinner-inner"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div><p className="text-sm text-zinc-500">Memuat data...</p></div></div></td></tr>
               ) : filteredDapur.length === 0 ? (
-                <tr><td colSpan={7} className="text-center py-12"><div className="empty-state"><div className="empty-state-icon"><Store size={24} /></div><p className="empty-state-title">Tidak ada data dapur</p><p className="empty-state-text">Klik "Tambah Dapur" untuk menambahkan data baru</p></div></td></tr>
+                <tr><td colSpan={7} className="text-center py-12"><div className="empty-state"><div className="empty-state-icon"><Store size={24} /></div><p className="empty-state-title">Tidak ada data dapur</p><p className="empty-state-text">Klik &quot;Tambah Dapur&quot; untuk menambahkan data baru</p></div></td></tr>
               ) : (
                 filteredDapur.map((dapur) => (
                   <tr key={dapur.id}>
