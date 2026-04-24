@@ -20,6 +20,19 @@ app.use(express.json());
 // Import database secara langsung
 const { get, run, all, isPostgres } = require('../database');
 
+// Routes (unified for SQLite & Postgres via database.js helpers)
+app.use('/api/auth', require('../routes/auth'));
+app.use('/api/dashboard', require('../routes/dashboard'));
+app.use('/api/sekolah', require('../routes/sekolah'));
+app.use('/api/dapur', require('../routes/dapur'));
+app.use('/api/jadwal', require('../routes/jadwal'));
+app.use('/api/pengiriman', require('../routes/pengiriman'));
+app.use('/api/stok', require('../routes/stok'));
+app.use('/api/insiden', require('../routes/insiden'));
+app.use('/api/users', require('../routes/users'));
+app.use('/api/kurir', require('../routes/kurir'));
+app.use('/api/dapur-kurir', require('../routes/dapur-kurir'));
+
 app.get('/api/health', (req, res) => {
   res.status(200).json({ 
     status: 'ok', 

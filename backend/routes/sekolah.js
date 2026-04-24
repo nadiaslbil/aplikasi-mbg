@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../database');
+const { all, get, run } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
 
 // Get all sekolah
-router.get('/', authenticateToken, (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
     const { kecamatan, kabupaten, status, search } = req.query;
     
@@ -33,7 +33,7 @@ router.get('/', authenticateToken, (req, res) => {
 
     query += ' ORDER BY nama ASC';
 
-    const sekolah = db.prepare(query).all(...params);
+    const sekolah = await all(query, params);
     res.json(sekolah);
   } catch (error) {
     console.error('Get sekolah error:', error);
@@ -42,9 +42,9 @@ router.get('/', authenticateToken, (req, res) => {
 });
 
 // Get sekolah by id
-router.get('/:id', authenticateToken, (req, res) => {
+router.get('/:id', authenticateToken, async (req, res) => {
   try {
-    const sekolah = db.prepare('SELECT * FROM sekolah WHERE id = ?').get(req.params.id);
+    const sekolah = await get('SELECT * FROM sekolah WHERE id = ?', [req.params.id]);
     
     if (!sekolah) {
       return res.status(404).json({ error: 'Sekolah tidak ditemukan' });
@@ -57,7 +57,7 @@ router.get('/:id', authenticateToken, (req, res) => {
 });
 
 // Create sekolah
-router.post('/', authenticateToken, (req, res) => {
+router.post('/', authenticateToken, async (req, res) => {
   try {
     const { nama, alamat, latitude, longitude, kecamatan, kabupaten, provinsi, jumlah_siswa, kontak } = req.body;
 
@@ -65,14 +65,17 @@ router.post('/', authenticateToken, (req, res) => {
       return res.status(400).json({ error: 'Data tidak lengkap' });
     }
 
-    const result = db.prepare(`
-      INSERT INTO sekolah (nama, alamat, latitude, longitude, kecamatan, kabupaten, provinsi, jumlah_siswa, kontak)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(nama, alamat, latitude, longitude, kecamatan, kabupaten, provinsi, jumlah_siswa || 0, kontak || null);
+    const result = await run(
+      `
+        INSERT INTO sekolah (nama, alamat, latitude, longitude, kecamatan, kabupaten, provinsi, jumlah_siswa, kontak)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+      [nama, alamat, latitude, longitude, kecamatan, kabupaten, provinsi, jumlah_siswa || 0, kontak || null]
+    );
 
     res.status(201).json({
       message: 'Sekolah berhasil ditambahkan',
-      id: result.lastInsertRowid,
+      id: result.lastID,
     });
   } catch (error) {
     console.error('Create sekolah error:', error);
@@ -81,26 +84,38 @@ router.post('/', authenticateToken, (req, res) => {
 });
 
 // Update sekolah
-router.put('/:id', authenticateToken, (req, res) => {
+router.put('/:id', authenticateToken, async (req, res) => {
   try {
     const { nama, alamat, latitude, longitude, kecamatan, kabupaten, provinsi, jumlah_siswa, kontak, status } = req.body;
 
-    const existing = db.prepare('SELECT id FROM sekolah WHERE id = ?').get(req.params.id);
+    const existing = await get('SELECT id FROM sekolah WHERE id = ?', [req.params.id]);
     
     if (!existing) {
       return res.status(404).json({ error: 'Sekolah tidak ditemukan' });
     }
 
-    db.prepare(`
-      UPDATE sekolah 
-      SET nama = ?, alamat = ?, latitude = ?, longitude = ?, 
-          kecamatan = ?, kabupaten = ?, provinsi = ?, 
-          jumlah_siswa = ?, kontak = ?, status = ?,
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).run(
-      nama, alamat, latitude, longitude, kecamatan, kabupaten, provinsi,
-      jumlah_siswa, kontak, status, req.params.id
+    await run(
+      `
+        UPDATE sekolah 
+        SET nama = ?, alamat = ?, latitude = ?, longitude = ?, 
+            kecamatan = ?, kabupaten = ?, provinsi = ?, 
+            jumlah_siswa = ?, kontak = ?, status = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `,
+      [
+        nama,
+        alamat,
+        latitude,
+        longitude,
+        kecamatan,
+        kabupaten,
+        provinsi,
+        jumlah_siswa,
+        kontak,
+        status,
+        req.params.id,
+      ]
     );
 
     res.json({ message: 'Sekolah berhasil diupdate' });
@@ -111,15 +126,15 @@ router.put('/:id', authenticateToken, (req, res) => {
 });
 
 // Delete sekolah
-router.delete('/:id', authenticateToken, (req, res) => {
+router.delete('/:id', authenticateToken, async (req, res) => {
   try {
-    const existing = db.prepare('SELECT id FROM sekolah WHERE id = ?').get(req.params.id);
+    const existing = await get('SELECT id FROM sekolah WHERE id = ?', [req.params.id]);
     
     if (!existing) {
       return res.status(404).json({ error: 'Sekolah tidak ditemukan' });
     }
 
-    db.prepare('DELETE FROM sekolah WHERE id = ?').run(req.params.id);
+    await run('DELETE FROM sekolah WHERE id = ?', [req.params.id]);
     res.json({ message: 'Sekolah berhasil dihapus' });
   } catch (error) {
     console.error('Delete sekolah error:', error);

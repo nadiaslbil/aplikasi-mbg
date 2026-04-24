@@ -23,8 +23,16 @@ export interface CourierStatusUpdate {
   timestamp: string;
 }
 
-// Extract base URL from API_URL (remove /api suffix)
-const SOCKET_URL = API_URL.replace(/\/api$/, '');
+const ENABLE_SOCKET_IO = process.env.NEXT_PUBLIC_ENABLE_SOCKET_IO === 'true';
+
+function getSocketUrl() {
+  // If API_URL is relative (/api), connect to same origin by default.
+  if (API_URL.startsWith('/')) {
+    if (typeof window === 'undefined') return '';
+    return window.location.origin;
+  }
+  return API_URL.replace(/\/api$/, '');
+}
 
 /**
  * Hook for listening to real-time courier location updates via Socket.io
@@ -35,8 +43,12 @@ export function useLiveTracking() {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
+    if (!ENABLE_SOCKET_IO) return;
     // Create socket connection
-    const socket = io(SOCKET_URL, {
+    const socketUrl = getSocketUrl();
+    if (!socketUrl) return;
+
+    const socket = io(socketUrl, {
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionDelay: 1000,

@@ -1,24 +1,24 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../database');
+const { get, all } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
 
 // Dashboard statistics
-router.get('/stats', authenticateToken, (req, res) => {
+router.get('/stats', authenticateToken, async (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0];
 
     // Total sekolah aktif
-    const totalSekolah = db.prepare('SELECT COUNT(*) as count FROM sekolah WHERE status = ?').get('aktif');
+    const totalSekolah = await get('SELECT COUNT(*) as count FROM sekolah WHERE status = ?', ['aktif']);
 
     // Total dapur aktif
-    const totalDapur = db.prepare('SELECT COUNT(*) as count FROM dapur_supplier WHERE status = ?').get('aktif');
+    const totalDapur = await get('SELECT COUNT(*) as count FROM dapur_supplier WHERE status = ?', ['aktif']);
 
     // Total jadwal hari ini
-    const jadwalHariIni = db.prepare('SELECT COUNT(*) as count FROM jadwal_distribusi WHERE tanggal = ?').get(today);
+    const jadwalHariIni = await get('SELECT COUNT(*) as count FROM jadwal_distribusi WHERE tanggal = ?', [today]);
 
     // Total jadwal status
-    const jadwalStatus = db.prepare(`
+    const jadwalStatus = await get(`
       SELECT 
         COUNT(*) as total,
         SUM(CASE WHEN status = 'terjadwal' THEN 1 ELSE 0 END) as terjadwal,
@@ -27,44 +27,44 @@ router.get('/stats', authenticateToken, (req, res) => {
         SUM(CASE WHEN status = 'gagal' THEN 1 ELSE 0 END) as gagal
       FROM jadwal_distribusi
       WHERE tanggal = ?
-    `).get(today);
+    `, [today]);
 
     // Total pengiriman bulan ini
-    const pengirimanBulanIni = db.prepare(`
+    const pengirimanBulanIni = await get(`
       SELECT COUNT(*) as count FROM jadwal_distribusi 
       WHERE strftime('%Y-%m', tanggal) = strftime('%Y-%m', 'now')
-    `).get(new Date());
+    `, [new Date()]);
 
     // Insiden bulan ini
-    const insidenBulanIni = db.prepare(`
+    const insidenBulanIni = await get(`
       SELECT COUNT(*) as count FROM insiden 
       WHERE strftime('%Y-%m', tanggal) = strftime('%Y-%m', 'now')
-    `).get(new Date());
+    `, [new Date()]);
 
     // Stok hampir expired
-    const stokExpiredSoon = db.prepare(`
+    const stokExpiredSoon = await get(`
       SELECT COUNT(*) as count FROM stok_bahan 
       WHERE expired_date <= date('now', '+3 days')
-    `).get();
+    `);
 
     res.json({
       today,
       sekolah: {
-        total_aktif: totalSekolah.count,
+        total_aktif: totalSekolah?.count || 0,
       },
       dapur: {
-        total_aktif: totalDapur.count,
+        total_aktif: totalDapur?.count || 0,
       },
       jadwal_hari_ini: {
-        total: jadwalHariIni.count,
-        terjadwal: jadwalStatus.terjadwal || 0,
-        dalam_pengiriman: jadwalStatus.dalam_pengiriman || 0,
-        diterima: jadwalStatus.diterima || 0,
-        gagal: jadwalStatus.gagal || 0,
+        total: jadwalHariIni?.count || 0,
+        terjadwal: jadwalStatus?.terjadwal || 0,
+        dalam_pengiriman: jadwalStatus?.dalam_pengiriman || 0,
+        diterima: jadwalStatus?.diterima || 0,
+        gagal: jadwalStatus?.gagal || 0,
       },
-      pengiriman_bulan_ini: pengirimanBulanIni.count,
-      insiden_bulan_ini: insidenBulanIni.count,
-      stok_expired_soon: stokExpiredSoon.count,
+      pengiriman_bulan_ini: pengirimanBulanIni?.count || 0,
+      insiden_bulan_ini: insidenBulanIni?.count || 0,
+      stok_expired_soon: stokExpiredSoon?.count || 0,
     });
   } catch (error) {
     console.error('Get dashboard stats error:', error);
@@ -73,24 +73,24 @@ router.get('/stats', authenticateToken, (req, res) => {
 });
 
 // Get data for map (all locations)
-router.get('/map-data', authenticateToken, (req, res) => {
+router.get('/map-data', authenticateToken, async (req, res) => {
   try {
     // Sekolah locations
-    const sekolah = db.prepare(`
+    const sekolah = await all(`
       SELECT id, nama, alamat, latitude, longitude, kecamatan, jumlah_siswa, status
       FROM sekolah
       WHERE status = 'aktif'
-    `).all();
+    `);
 
     // Dapur locations
-    const dapur = db.prepare(`
+    const dapur = await all(`
       SELECT id, nama, alamat, latitude, longitude, kecamatan, kapasitas_harian, status
       FROM dapur_supplier
       WHERE status = 'aktif'
-    `).all();
+    `);
 
     // Active courier locations
-    const couriers = db.prepare(`
+    const couriers = await all(`
       SELECT p.id, p.latitude, p.longitude, p.status,
              u.nama as kurir_nama,
              s.nama as sekolah_nama
@@ -101,17 +101,17 @@ router.get('/map-data', authenticateToken, (req, res) => {
       WHERE p.status = 'dalam_perjalanan'
       AND p.latitude IS NOT NULL
       AND p.longitude IS NOT NULL
-    `).all();
+    `);
 
     // Insiden locations (last 30 days)
-    const insiden = db.prepare(`
+    const insiden = await all(`
       SELECT id, sekolah_id, tipe, deskripsi, latitude, longitude, tanggal, status
       FROM insiden
       WHERE latitude IS NOT NULL 
       AND longitude IS NOT NULL
       AND tanggal >= date('now', '-30 days')
       ORDER BY tanggal DESC
-    `).all();
+    `);
 
     res.json({
       sekolah,
@@ -126,9 +126,9 @@ router.get('/map-data', authenticateToken, (req, res) => {
 });
 
 // Recent activities
-router.get('/recent-activities', authenticateToken, (req, res) => {
+router.get('/recent-activities', authenticateToken, async (req, res) => {
   try {
-    const activities = db.prepare(`
+    const activities = await all(`
       SELECT 'pengiriman' as type, p.id, p.status, u.nama as kurir, s.nama as sekolah, p.updated_at
       FROM pengiriman p
       JOIN users u ON p.kurir_id = u.id
@@ -141,7 +141,7 @@ router.get('/recent-activities', authenticateToken, (req, res) => {
       LEFT JOIN dapur_supplier d ON i.dapur_id = d.id
       ORDER BY updated_at DESC
       LIMIT 20
-    `).all();
+    `);
 
     res.json(activities);
   } catch (error) {
@@ -151,9 +151,9 @@ router.get('/recent-activities', authenticateToken, (req, res) => {
 });
 
 // Distribution by kecamatan
-router.get('/by-kecamatan', authenticateToken, (req, res) => {
+router.get('/by-kecamatan', authenticateToken, async (req, res) => {
   try {
-    const data = db.prepare(`
+    const data = await all(`
       SELECT s.kecamatan, 
              COUNT(DISTINCT s.id) as total_sekolah,
              SUM(s.jumlah_siswa) as total_siswa,
@@ -163,7 +163,7 @@ router.get('/by-kecamatan', authenticateToken, (req, res) => {
       WHERE s.status = 'aktif'
       GROUP BY s.kecamatan
       ORDER BY s.kecamatan
-    `).all();
+    `);
 
     res.json(data);
   } catch (error) {
