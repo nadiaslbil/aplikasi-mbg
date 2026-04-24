@@ -17,9 +17,20 @@ let pool;
 if (isPostgres) {
   pool = new Pool({
     connectionString: rawUrl,
-    ssl: { rejectUnauthorized: false }
+    ssl: {
+      rejectUnauthorized: false
+    }
   });
-  console.log('✅ Connected to Vercel Postgres');
+  
+  // Tes koneksi untuk memastikan tidak ada error saat startup
+  pool.connect((err, client, release) => {
+    if (err) {
+      console.error('❌ Gagal koneksi ke Postgres:', err.stack);
+    } else {
+      console.log('✅ Berhasil koneksi ke Vercel Postgres');
+      release();
+    }
+  });
 } else {
   // Only load sqlite3 in local dev to avoid Vercel build issues
   try {
