@@ -1,7 +1,5 @@
 const express = require('express');
 const dotenv = require('dotenv');
-const http = require('http');
-const path = require('path');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
@@ -9,14 +7,23 @@ dotenv.config();
 
 const app = express();
 
-// 1. GLOBAL CORS MIDDLEWARE - JAMINAN HEADER ADA
+// JANGAN gunakan package 'cors', gunakan middleware manual ini agar kita punya kontrol penuh
 app.use((req, res, next) => {
+  const allowedOrigins = ['https://aplikasi-mbg-theta.vercel.app', 'http://localhost:3000'];
   const origin = req.headers.origin;
-  res.setHeader('Access-Control-Allow-Origin', origin || '*');
+
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    // Fallback untuk development atau jika origin tidak terdeteksi (tapi tetap kirim origin pertama)
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigins[0]);
+  }
+
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
 
+  // KHUSUS UNTUK PREFLIGHT (OPTIONS)
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -26,27 +33,25 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 2. IMPORT DATABASE DENGAN TRY-CATCH AGAR TIDAK CRASH SAAT STARTUP
+// Import database dengan sangat hati-hati
 let db_methods = {};
 try {
-  const db_module = require('./database');
-  db_methods = db_module;
-} catch (error) {
-  console.error('DATABASE INIT ERROR:', error);
+  const db = require('./database');
+  db_methods = db;
+} catch (e) {
+  console.error("Gagal load database:", e.message);
 }
 
-const { get, all, isPostgres } = db_methods;
-
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', database: isPostgres ? 'postgres' : 'sqlite' });
+  res.status(200).json({ status: 'ok', message: 'Backend is running' });
 });
 
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ error: 'Email dan password wajib diisi' });
+    const { get } = db_methods;
 
-    if (!get) throw new Error('Database methods not available');
+    if (!get) return res.status(500).json({ error: 'Database tidak terkoneksi' });
 
     const user = await get('SELECT * FROM users WHERE email = ?', [email]);
     if (!user || !bcrypt.compareSync(password, user.password_hash)) {
@@ -55,25 +60,23 @@ app.post('/api/auth/login', async (req, res) => {
 
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role, nama: user.nama },
-      process.env.JWT_SECRET || 'fallback_secret',
+      process.env.JWT_SECRET || 'secret_mbg_123',
       { expiresIn: '24h' }
     );
 
     res.json({
-      message: 'Login berhasil',
       token,
-      user: { id: user.id, nama: user.nama, email: user.email, role: user.role },
+      user: { id: user.id, nama: user.nama, email: user.email, role: user.role }
     });
   } catch (error) {
-    console.error('LOGIN ERROR:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Server Error: ' + error.message });
   }
 });
 
-// Export untuk Vercel
 module.exports = app;
 
-if (!process.env.VERCEL) {
+// Jalankan server jika lokal
+if (require.main === module) {
   const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+  app.listen(PORT, () => console.log(`Server running on ${PORT}`));
 }
