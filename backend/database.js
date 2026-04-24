@@ -47,7 +47,14 @@ if (isPostgres) {
 function transformQuery(sql) {
   if (!isPostgres) return sql;
   
+  // Ganti ? dengan $1, $2, dll
   let pgSql = sql.replace(/\?/g, (_, i) => `$${i + 1}`);
+  
+  // Tambahkan casting ::text untuk parameter pencarian umum agar Postgres tidak bingung
+  // Terutama untuk query WHERE ... = ?
+  if (pgSql.includes('WHERE email = $1')) {
+    pgSql = pgSql.replace('WHERE email = $1', 'WHERE email = $1::text');
+  }
   
   // Basic type and function replacements
   pgSql = pgSql.replace(/INTEGER PRIMARY KEY AUTOINCREMENT/gi, 'SERIAL PRIMARY KEY')
