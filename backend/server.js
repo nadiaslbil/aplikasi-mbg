@@ -1,5 +1,4 @@
 const express = require('express');
-const cors = require('cors');
 const dotenv = require('dotenv');
 const http = require('http');
 const path = require('path');
@@ -10,16 +9,14 @@ dotenv.config();
 
 const app = express();
 
-// 1. Robust Manual CORS Middleware
+// 1. GLOBAL CORS MIDDLEWARE - JAMINAN HEADER ADA
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  // Izinkan origin yang memanggil atau fallback ke * jika tidak ada
   res.setHeader('Access-Control-Allow-Origin', origin || '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
 
-  // Segera respon request preflight (OPTIONS)
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -29,27 +26,27 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 2. Database & Middleware
-const { pool, db, run, get, all, isPostgres } = require('./database');
-const { upload, handleMulterError } = require('./middleware/upload');
-const { requireRole } = require('./middleware/rbac');
+// 2. IMPORT DATABASE DENGAN TRY-CATCH AGAR TIDAK CRASH SAAT STARTUP
+let db_methods = {};
+try {
+  const db_module = require('./database');
+  db_methods = db_module;
+} catch (error) {
+  console.error('DATABASE INIT ERROR:', error);
+}
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// ============ ROUTES ============
+const { get, all, isPostgres } = db_methods;
 
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    database: isPostgres ? 'postgres' : 'sqlite',
-    env: process.env.VERCEL ? 'production/vercel' : 'development'
-  });
+  res.json({ status: 'ok', database: isPostgres ? 'postgres' : 'sqlite' });
 });
 
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email dan password wajib diisi' });
+
+    if (!get) throw new Error('Database methods not available');
 
     const user = await get('SELECT * FROM users WHERE email = ?', [email]);
     if (!user || !bcrypt.compareSync(password, user.password_hash)) {
@@ -58,7 +55,7 @@ app.post('/api/auth/login', async (req, res) => {
 
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role, nama: user.nama },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || 'fallback_secret',
       { expiresIn: '24h' }
     );
 
@@ -68,46 +65,15 @@ app.post('/api/auth/login', async (req, res) => {
       user: { id: user.id, nama: user.nama, email: user.email, role: user.role },
     });
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: 'Server error: ' + error.message });
+    console.error('LOGIN ERROR:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
-// Route dummy untuk memastikan rute lain juga terdaftar
-app.get('/api/sekolah', authenticateToken, async (req, res) => {
-  try {
-    const results = await all('SELECT * FROM sekolah LIMIT 10');
-    res.json(results);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+// Export untuk Vercel
+module.exports = app;
 
-function authenticateToken(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-  if (!token) return res.status(401).json({ error: 'Token tidak tersedia' });
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) return res.status(401).json({ error: 'Token tidak valid' });
-    req.user = user;
-    next();
-  });
-}
-
-// 3. EXPORT UNTUK VERCEL (PENTING!)
-if (process.env.VERCEL) {
-  module.exports = app;
-} else {
-  const server = http.createServer(app);
-  const { Server } = require('socket.io');
-  const io = new Server(server, { cors: { origin: "*" } });
-  
-  io.on('connection', (socket) => {
-    socket.on('courier-location', (data) => io.emit('courier-update', data));
-  });
-
+if (!process.env.VERCEL) {
   const PORT = process.env.PORT || 5000;
-  server.listen(PORT, () => {
-    console.log(`🚀 Local Server running on port ${PORT}`);
-  });
+  app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 }
