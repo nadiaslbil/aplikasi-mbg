@@ -48,7 +48,11 @@ function transformQuery(sql) {
   if (!isPostgres) return sql;
   
   // Ganti ? dengan $1, $2, dll
-  let pgSql = sql.replace(/\?/g, (_, i) => `$${i + 1}`);
+  let paramIndex = 0;
+  let pgSql = sql.replace(/\?/g, () => {
+    paramIndex += 1;
+    return `$${paramIndex}`;
+  });
   
   // Tambahkan casting ::text untuk parameter pencarian umum agar Postgres tidak bingung
   // Terutama untuk query WHERE ... = ?
