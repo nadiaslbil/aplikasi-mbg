@@ -33,13 +33,13 @@ router.get('/stats', authenticateToken, async (req, res) => {
     const pengirimanBulanIni = await get(`
       SELECT COUNT(*) as count FROM jadwal_distribusi 
       WHERE strftime('%Y-%m', tanggal) = strftime('%Y-%m', 'now')
-    `, [new Date()]);
+    `);
 
     // Insiden bulan ini
     const insidenBulanIni = await get(`
       SELECT COUNT(*) as count FROM insiden 
       WHERE strftime('%Y-%m', tanggal) = strftime('%Y-%m', 'now')
-    `, [new Date()]);
+    `);
 
     // Stok hampir expired
     const stokExpiredSoon = await get(`

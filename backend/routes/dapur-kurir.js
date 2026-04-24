@@ -21,7 +21,7 @@ router.get('/', authenticateToken, async (req, res) => {
       params.push(kurir_id);
     }
 
-    query += ' ORDER BY dk.created_at DESC';
+    query += ' ORDER BY dk.dapur_id ASC, dk.kurir_id ASC';
 
     const rows = await all(query, params);
     res.json(rows);

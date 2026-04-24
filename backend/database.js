@@ -64,7 +64,7 @@ function transformQuery(sql) {
   pgSql = pgSql.replace(/INTEGER PRIMARY KEY AUTOINCREMENT/gi, 'SERIAL PRIMARY KEY')
                .replace(/DATETIME DEFAULT CURRENT_TIMESTAMP/gi, 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP')
                .replace(/REAL/gi, 'DOUBLE PRECISION')
-               .replace(/strftime\('%Y-%m', tanggal\)/gi, "TO_CHAR(tanggal, 'YYYY-MM')")
+               .replace(/strftime\('%Y-%m', tanggal\)/gi, "TO_CHAR(tanggal::date, 'YYYY-MM')")
                .replace(/strftime\('%Y-%m', 'now'\)/gi, "TO_CHAR(CURRENT_DATE, 'YYYY-MM')")
                .replace(/date\('now', '\+3 days'\)/gi, "(CURRENT_DATE + INTERVAL '3 days')")
                .replace(/date\('now', '-30 days'\)/gi, "(CURRENT_DATE - INTERVAL '30 days')");
