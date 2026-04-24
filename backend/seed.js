@@ -1,5 +1,5 @@
 const { run, get } = require('./database');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 async function seed() {
   console.log('🌱 Seeding data dummy...');
