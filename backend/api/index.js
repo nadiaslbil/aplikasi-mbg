@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors');
 const dotenv = require('dotenv');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -7,43 +8,28 @@ const path = require('path');
 dotenv.config();
 const app = express();
 
-// Middleware CORS - Jaminan akses dari domain Theta
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  const allowedOrigins = ['https://aplikasi-mbg-theta.vercel.app', 'http://localhost:3000'];
-  
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  } else {
-    res.setHeader('Access-Control-Allow-Origin', allowedOrigins[0]);
-  }
-  
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  next();
-});
+// Gunakan CORS standar dengan konfigurasi yang sama
+app.use(cors({
+  origin: 'https://aplikasi-mbg-theta.vercel.app',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH']
+}));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Sesuaikan path import karena sekarang file ada di dalam folder /api
 const databasePath = path.join(__dirname, '../database');
 let db_methods = {};
 try {
   db_methods = require(databasePath);
 } catch (e) {
-  console.error("Database connection error:", e.message);
+  console.error("Database initialization failed:", e.message);
 }
 
 const { get } = db_methods;
 
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'ok', info: 'Running as Vercel Function' });
+  res.status(200).json({ status: 'ok', source: 'vercel-function' });
 });
 
 app.post('/api/auth/login', async (req, res) => {
