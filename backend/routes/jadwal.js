@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../database');
+const { all, get, run } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
 
 // Get all jadwal distribusi
-router.get('/', authenticateToken, (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
     const { tanggal, status, dapur_id, sekolah_id } = req.query;
     
@@ -40,7 +40,7 @@ router.get('/', authenticateToken, (req, res) => {
 
     query += ' ORDER BY jd.tanggal DESC, jd.waktu_kirim ASC';
 
-    const jadwal = db.prepare(query).all(...params);
+    const jadwal = await all(query, params);
     res.json(jadwal);
   } catch (error) {
     console.error('Get jadwal error:', error);
@@ -49,7 +49,7 @@ router.get('/', authenticateToken, (req, res) => {
 });
 
 // Get jadwal by id
-router.get('/:id', authenticateToken, (req, res) => {
+router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const query = `
       SELECT jd.*, ds.nama as dapur_nama, s.nama as sekolah_nama, s.alamat as sekolah_alamat,
@@ -61,7 +61,7 @@ router.get('/:id', authenticateToken, (req, res) => {
       WHERE jd.id = ?
     `;
     
-    const jadwal = db.prepare(query).get(req.params.id);
+    const jadwal = await get(query, [req.params.id]);
     
     if (!jadwal) {
       return res.status(404).json({ error: 'Jadwal tidak ditemukan' });
@@ -74,7 +74,7 @@ router.get('/:id', authenticateToken, (req, res) => {
 });
 
 // Create jadwal
-router.post('/', authenticateToken, (req, res) => {
+router.post('/', authenticateToken, async (req, res) => {
   try {
     const { dapur_id, sekolah_id, tanggal, waktu_kirim, jumlah_porsi, catatan } = req.body;
 
@@ -82,14 +82,17 @@ router.post('/', authenticateToken, (req, res) => {
       return res.status(400).json({ error: 'Data tidak lengkap' });
     }
 
-    const result = db.prepare(`
-      INSERT INTO jadwal_distribusi (dapur_id, sekolah_id, tanggal, waktu_kirim, jumlah_porsi, catatan)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).run(dapur_id, sekolah_id, tanggal, waktu_kirim || null, jumlah_porsi, catatan || null);
+    const result = await run(
+      `
+        INSERT INTO jadwal_distribusi (dapur_id, sekolah_id, tanggal, waktu_kirim, jumlah_porsi, catatan)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `,
+      [dapur_id, sekolah_id, tanggal, waktu_kirim || null, jumlah_porsi, catatan || null]
+    );
 
     res.status(201).json({
       message: 'Jadwal distribusi berhasil ditambahkan',
-      id: result.lastInsertRowid,
+      id: result.lastID,
     });
   } catch (error) {
     console.error('Create jadwal error:', error);
@@ -98,24 +101,35 @@ router.post('/', authenticateToken, (req, res) => {
 });
 
 // Update jadwal
-router.put('/:id', authenticateToken, (req, res) => {
+router.put('/:id', authenticateToken, async (req, res) => {
   try {
     const { dapur_id, sekolah_id, tanggal, waktu_kirim, waktu_terima, jumlah_porsi, status, catatan } = req.body;
 
-    const existing = db.prepare('SELECT id FROM jadwal_distribusi WHERE id = ?').get(req.params.id);
+    const existing = await get('SELECT id FROM jadwal_distribusi WHERE id = ?', [req.params.id]);
     
     if (!existing) {
       return res.status(404).json({ error: 'Jadwal tidak ditemukan' });
     }
 
-    db.prepare(`
-      UPDATE jadwal_distribusi 
-      SET dapur_id = ?, sekolah_id = ?, tanggal = ?, waktu_kirim = ?, 
-          waktu_terima = ?, jumlah_porsi = ?, status = ?, catatan = ?,
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).run(
-      dapur_id, sekolah_id, tanggal, waktu_kirim, waktu_terima, jumlah_porsi, status, catatan, req.params.id
+    await run(
+      `
+        UPDATE jadwal_distribusi 
+        SET dapur_id = ?, sekolah_id = ?, tanggal = ?, waktu_kirim = ?, 
+            waktu_terima = ?, jumlah_porsi = ?, status = ?, catatan = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `,
+      [
+        dapur_id,
+        sekolah_id,
+        tanggal,
+        waktu_kirim,
+        waktu_terima,
+        jumlah_porsi,
+        status,
+        catatan,
+        req.params.id,
+      ]
     );
 
     res.json({ message: 'Jadwal distribusi berhasil diupdate' });
@@ -126,15 +140,15 @@ router.put('/:id', authenticateToken, (req, res) => {
 });
 
 // Delete jadwal
-router.delete('/:id', authenticateToken, (req, res) => {
+router.delete('/:id', authenticateToken, async (req, res) => {
   try {
-    const existing = db.prepare('SELECT id FROM jadwal_distribusi WHERE id = ?').get(req.params.id);
+    const existing = await get('SELECT id FROM jadwal_distribusi WHERE id = ?', [req.params.id]);
     
     if (!existing) {
       return res.status(404).json({ error: 'Jadwal tidak ditemukan' });
     }
 
-    db.prepare('DELETE FROM jadwal_distribusi WHERE id = ?').run(req.params.id);
+    await run('DELETE FROM jadwal_distribusi WHERE id = ?', [req.params.id]);
     res.json({ message: 'Jadwal distribusi berhasil dihapus' });
   } catch (error) {
     console.error('Delete jadwal error:', error);
