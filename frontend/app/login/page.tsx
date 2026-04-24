@@ -78,7 +78,7 @@ export default function LoginPage() {
                 type="email"
                 {...register('email', { required: true })}
                 className="w-full px-3 py-2 text-sm rounded-lg border border-zinc-300/80 bg-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-zinc-400 hover:border-zinc-400/80"
-                placeholder="admin@mbg.go.id"
+                placeholder="Masukkan email"
               />
             </div>
 
@@ -107,14 +107,6 @@ export default function LoginPage() {
               )}
             </button>
           </form>
-
-          <div className="mt-5 pt-5 border-t border-zinc-200/80">
-            <p className="text-xs font-medium text-zinc-500 mb-2">Demo Account</p>
-            <div className="bg-zinc-50 rounded-lg p-3 space-y-1.5">
-              <p className="text-xs text-zinc-600"><span className="font-medium">Email:</span> admin@mbg.go.id</p>
-              <p className="text-xs text-zinc-600"><span className="font-medium">Password:</span> admin123</p>
-            </div>
-          </div>
         </div>
 
         {/* Footer */}
