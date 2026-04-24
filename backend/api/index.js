@@ -8,7 +8,7 @@ const path = require('path');
 dotenv.config();
 const app = express();
 
-// Gunakan CORS standar dengan konfigurasi yang sama
+// Jamin CORS dari Theta
 app.use(cors({
   origin: 'https://aplikasi-mbg-theta.vercel.app',
   credentials: true,
@@ -16,30 +16,61 @@ app.use(cors({
 }));
 
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-const databasePath = path.join(__dirname, '../database');
-let db_methods = {};
-try {
-  db_methods = require(databasePath);
-} catch (e) {
-  console.error("Database initialization failed:", e.message);
-}
-
-const { get } = db_methods;
+// Import database secara langsung
+const { get, run, all, isPostgres } = require('../database');
 
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'ok', source: 'vercel-function' });
+  res.status(200).json({ 
+    status: 'ok', 
+    database: isPostgres ? 'postgres' : 'sqlite',
+    env: process.env.NODE_ENV 
+  });
+});
+
+// ENDPOINT DARURAT: Jalankan ini sekali untuk buat tabel & user admin
+app.get('/api/seed', async (req, res) => {
+  try {
+    // Buat tabel users jika belum ada
+    await run(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        nama TEXT,
+        email TEXT UNIQUE,
+        password_hash TEXT,
+        role TEXT
+      )
+    `);
+
+    // Cek apakah admin sudah ada
+    const admin = await get('SELECT * FROM users WHERE email = ?', ['admin@mbg.go.id']);
+    if (!admin) {
+      const hash = bcrypt.hashSync('admin123', 10);
+      await run('INSERT INTO users (nama, email, password_hash, role) VALUES (?, ?, ?, ?)', 
+        ['Admin BGN', 'admin@mbg.go.id', hash, 'admin_bgn']);
+      return res.json({ message: 'Database seeded successfully. Admin created.' });
+    }
+    
+    res.json({ message: 'Database already has data.' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!get) return res.status(500).json({ error: 'Database error' });
-
+    
+    // Pastikan database siap
     const user = await get('SELECT * FROM users WHERE email = ?', [email]);
-    if (!user || !bcrypt.compareSync(password, user.password_hash)) {
-      return res.status(401).json({ error: 'Email atau password salah' });
+    
+    if (!user) {
+      return res.status(401).json({ error: 'User tidak ditemukan' });
+    }
+
+    const isMatch = bcrypt.compareSync(password, user.password_hash);
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Password salah' });
     }
 
     const token = jwt.sign(
@@ -48,9 +79,13 @@ app.post('/api/auth/login', async (req, res) => {
       { expiresIn: '24h' }
     );
 
-    res.json({ token, user: { id: user.id, nama: user.nama, email: user.email, role: user.role } });
+    res.json({
+      token,
+      user: { id: user.id, nama: user.nama, email: user.email, role: user.role }
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Login Error:', error);
+    res.status(500).json({ error: 'Database Error: ' + error.message });
   }
 });
 
