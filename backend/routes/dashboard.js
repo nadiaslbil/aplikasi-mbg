@@ -10,7 +10,11 @@ router.get('/supplier-stats', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'Akses ditolak' });
     }
 
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString().split('T')[0];
+    const expiredSoonDate = new Date(now.getTime() + (3 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
     const dapurRows = await all(
       'SELECT id, nama, kapasitas_harian FROM dapur_supplier WHERE user_id = ? ORDER BY id ASC',
       [req.user.id]
@@ -50,17 +54,19 @@ router.get('/supplier-stats', authenticateToken, async (req, res) => {
         SELECT COUNT(*) as count
         FROM pengiriman p
         JOIN jadwal_distribusi jd ON p.jadwal_id = jd.id
-        WHERE strftime('%Y-%m', jd.tanggal) = strftime('%Y-%m', 'now')
+        WHERE jd.tanggal >= ?
+          AND jd.tanggal < ?
           AND jd.dapur_id IN (${placeholders})
       `,
-      dapurIds
+      [monthStart, nextMonthStart, ...dapurIds]
     );
 
     const insidenBulanIni = await get(
       `
         SELECT COUNT(*) as count
         FROM insiden i
-        WHERE strftime('%Y-%m', i.tanggal) = strftime('%Y-%m', 'now')
+        WHERE i.tanggal >= ?
+          AND i.tanggal < ?
           AND (
             i.dapur_id IN (${placeholders})
             OR (
@@ -74,17 +80,17 @@ router.get('/supplier-stats', authenticateToken, async (req, res) => {
             )
           )
       `,
-      [...dapurIds, ...dapurIds]
+      [monthStart, nextMonthStart, ...dapurIds, ...dapurIds]
     );
 
     const stokExpiredSoon = await get(
       `
         SELECT COUNT(*) as count
         FROM stok_bahan
-        WHERE expired_date <= date('now', '+3 days')
+        WHERE expired_date <= ?
           AND dapur_id IN (${placeholders})
       `,
-      dapurIds
+      [expiredSoonDate, ...dapurIds]
     );
 
     const sekolahBinaan = await get(
