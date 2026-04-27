@@ -499,26 +499,29 @@ export default function KurirPage() {
                     )}
 
                     {/* Action buttons */}
-                    <div className="flex gap-2 mt-3">
+                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
                       {isAktif && (
                         <>
                           <button
+                            type="button"
                             onClick={() => handleUpdate(tugas)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 text-white rounded-lg text-xs font-medium hover:bg-orange-700 transition"
+                            className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-orange-600 text-white rounded-lg text-xs font-medium hover:bg-orange-700 transition"
                           >
                             <Navigation size={12} />
                             Update Lokasi & Status
                           </button>
                           <button
+                            type="button"
                             onClick={() => handleQuickStatus(tugas, 'diterima')}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-medium hover:bg-green-700 transition"
+                            className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-green-600 text-white rounded-lg text-xs font-medium hover:bg-green-700 transition"
                           >
                             <CheckCircle2 size={12} />
                             Diterima
                           </button>
                           <button
+                            type="button"
                             onClick={() => handleQuickStatus(tugas, 'gagal')}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-medium hover:bg-red-700 transition"
+                            className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-red-600 text-white rounded-lg text-xs font-medium hover:bg-red-700 transition"
                           >
                             <AlertTriangle size={12} />
                             Gagal
