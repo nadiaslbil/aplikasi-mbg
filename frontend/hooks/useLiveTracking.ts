@@ -120,11 +120,25 @@ export function useLiveTracking() {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to update location');
+        let message = 'Failed to update location';
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const error = await response.json();
+          message = error.error || message;
+        } else {
+          const text = await response.text();
+          if (text && !text.includes('<!DOCTYPE')) {
+            message = text;
+          }
+        }
+        throw new Error(message);
       }
 
-      return await response.json();
+      const okType = response.headers.get('content-type') || '';
+      if (okType.includes('application/json')) {
+        return await response.json();
+      }
+      return { message: 'Lokasi berhasil diupdate' };
     } catch (error) {
       console.error('Error sending location:', error);
       throw error;

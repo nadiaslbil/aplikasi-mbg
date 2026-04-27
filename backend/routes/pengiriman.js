@@ -150,6 +150,47 @@ router.put('/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// Update lokasi kurir (compat endpoint for frontend live tracking)
+router.put('/:id/location', authenticateToken, async (req, res) => {
+  try {
+    const { latitude, longitude, status, catatan } = req.body;
+    const existing = await get('SELECT id FROM pengiriman WHERE id = ?', [req.params.id]);
+
+    if (!existing) {
+      return res.status(404).json({ error: 'Pengiriman tidak ditemukan' });
+    }
+
+    await run(
+      `
+        UPDATE pengiriman
+        SET latitude = ?, longitude = ?, status = ?, catatan = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `,
+      [latitude || null, longitude || null, status || 'dalam_perjalanan', catatan || null, req.params.id]
+    );
+
+    // Keep jadwal status in sync when delivery completed via location endpoint
+    if (status === 'diterima') {
+      const pengiriman = await get('SELECT jadwal_id FROM pengiriman WHERE id = ?', [req.params.id]);
+      if (pengiriman?.jadwal_id) {
+        await run(
+          `
+            UPDATE jadwal_distribusi
+            SET status = 'diterima', waktu_terima = CURRENT_TIMESTAMP
+            WHERE id = ?
+          `,
+          [pengiriman.jadwal_id]
+        );
+      }
+    }
+
+    res.json({ message: 'Lokasi berhasil diupdate' });
+  } catch (error) {
+    console.error('Update lokasi pengiriman error:', error);
+    res.status(500).json({ error: 'Terjadi kesalahan server' });
+  }
+});
+
 // Get kurir locations for real-time tracking
 router.get('/tracking/active', authenticateToken, async (req, res) => {
   try {
