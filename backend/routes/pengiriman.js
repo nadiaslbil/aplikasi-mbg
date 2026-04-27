@@ -29,6 +29,12 @@ router.get('/', authenticateToken, async (req, res) => {
       params.push(jadwal_id);
     }
 
+    // Kurir hanya melihat pengiriman miliknya agar sinkron dengan dashboard kurir
+    if (req.user?.role === 'kurir') {
+      query += ' AND p.kurir_id = ?';
+      params.push(req.user.id);
+    }
+
     query += ' ORDER BY p.created_at DESC';
 
     const pengiriman = await all(query, params);

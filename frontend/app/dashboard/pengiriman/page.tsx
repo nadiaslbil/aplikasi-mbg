@@ -42,16 +42,16 @@ interface Pengiriman {
 }
 
 const statusConfig: Record<string, { badge: string; icon: typeof Truck }> = {
+  dalam_perjalanan: { badge: 'badge-orange', icon: Truck },
+  // Backward compatibility for old status value
   dalam_pengiriman: { badge: 'badge-orange', icon: Truck },
-  terjadwal: { badge: 'badge-blue', icon: Calendar },
   diterima: { badge: 'badge-green', icon: CheckCircle2 },
   gagal: { badge: 'badge-red', icon: AlertTriangle },
 };
 
 const filterOptions = [
   { value: '', label: 'Semua', icon: Filter },
-  { value: 'dalam_pengiriman', label: 'Dalam Perjalanan', icon: Truck },
-  { value: 'terjadwal', label: 'Terjadwal', icon: Calendar },
+  { value: 'dalam_perjalanan', label: 'Dalam Perjalanan', icon: Truck },
   { value: 'diterima', label: 'Diterima', icon: CheckCircle2 },
   { value: 'gagal', label: 'Gagal', icon: AlertTriangle },
 ];
@@ -173,7 +173,7 @@ export default function PengirimanPage() {
                 <tr><td colSpan={8} className="text-center py-12"><div className="empty-state"><div className="empty-state-icon"><Truck size={24} /></div><p className="empty-state-title">Tidak ada pengiriman</p><p className="empty-state-text">Belum ada data pengiriman untuk filter yang dipilih</p></div></td></tr>
               ) : (
                 pengirimanList.map((p) => {
-                  const config = statusConfig[p.status] || statusConfig.dalam_pengiriman;
+                  const config = statusConfig[p.status] || statusConfig.dalam_perjalanan;
                   const StatusIcon = config.icon;
                   const fotoUrl = getFotoUrl(p.bukti_foto);
                   return (
