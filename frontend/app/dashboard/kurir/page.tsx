@@ -16,7 +16,6 @@ import {
   Clock,
   MapPin,
   Navigation,
-  Send,
   Camera,
   X,
   Package,
@@ -564,14 +563,6 @@ export default function KurirPage() {
                   </p>
                 )}
                 <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => sendLocationOnce(selectedTugas.id)}
-                    disabled={currentLat === null}
-                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition"
-                  >
-                    <Send size={14} /> Kirim Lokasi Sekarang
-                  </button>
                   {!isTracking ? (
                     <button
                       type="button"
@@ -584,7 +575,7 @@ export default function KurirPage() {
                     <button
                       type="button"
                       onClick={stopTracking}
-                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition"
+                      className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition"
                     >
                       <StopCircle size={14} /> Stop Live
                     </button>

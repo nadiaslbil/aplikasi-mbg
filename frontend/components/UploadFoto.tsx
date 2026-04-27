@@ -22,9 +22,9 @@ export default function UploadFoto({ onUploadSuccess, currentFoto, maxFileSize =
     if (!file) return;
 
     // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif'];
     if (!allowedTypes.includes(file.type)) {
-      setError('File type tidak didukung. Hanya gambar (JPG, PNG, GIF, WebP) yang diperbolehkan.');
+      setError('File type tidak didukung. Hanya gambar (JPG, PNG, GIF, WebP, HEIC/HEIF) yang diperbolehkan.');
       return;
     }
 
@@ -157,7 +157,8 @@ export default function UploadFoto({ onUploadSuccess, currentFoto, maxFileSize =
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+            accept="image/*"
+            capture="environment"
             onChange={handleInputChange}
             className="hidden"
             disabled={uploading}
@@ -178,7 +179,7 @@ export default function UploadFoto({ onUploadSuccess, currentFoto, maxFileSize =
                   Klik untuk upload atau drag & drop
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  JPG, PNG, GIF, WebP (Maks. {maxFileSize}MB)
+                  JPG, PNG, GIF, WebP, HEIC (Maks. {maxFileSize}MB)
                 </p>
               </div>
             </div>
