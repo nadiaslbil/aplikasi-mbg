@@ -6,7 +6,7 @@ const { authenticateToken } = require('../middleware/auth');
 // Get dapur-kurir relations (optionally filter by kurir_id)
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const { kurir_id } = req.query;
+    const { kurir_id, dapur_id } = req.query;
     let query = `
       SELECT dk.*, ds.nama as dapur_nama, u.nama as kurir_nama
       FROM dapur_kurir dk
@@ -15,6 +15,11 @@ router.get('/', authenticateToken, async (req, res) => {
       WHERE 1=1
     `;
     const params = [];
+
+    if (dapur_id) {
+      query += ' AND dk.dapur_id = ?';
+      params.push(dapur_id);
+    }
 
     if (kurir_id) {
       query += ' AND dk.kurir_id = ?';

@@ -76,10 +76,34 @@ router.get('/:id', authenticateToken, async (req, res) => {
 // Create jadwal
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    const { dapur_id, sekolah_id, tanggal, waktu_kirim, jumlah_porsi, catatan } = req.body;
+    const { dapur_id, sekolah_id, tanggal, waktu_kirim, jumlah_porsi, catatan, kurir_id } = req.body;
 
     if (!dapur_id || !sekolah_id || !tanggal || !jumlah_porsi) {
       return res.status(400).json({ error: 'Data tidak lengkap' });
+    }
+
+    const sekolahRelation = await get(
+      `
+        SELECT id
+        FROM dapur_sekolah
+        WHERE dapur_id = ?
+          AND sekolah_id = ?
+          AND status = 'aktif'
+      `,
+      [dapur_id, sekolah_id]
+    );
+    if (!sekolahRelation) {
+      return res.status(400).json({ error: 'Sekolah tidak terdaftar sebagai binaan dapur ini' });
+    }
+
+    if (kurir_id) {
+      const kurirRelation = await get(
+        'SELECT id FROM dapur_kurir WHERE dapur_id = ? AND kurir_id = ?',
+        [dapur_id, kurir_id]
+      );
+      if (!kurirRelation) {
+        return res.status(400).json({ error: 'Kurir tidak terdaftar pada dapur ini' });
+      }
     }
 
     const result = await run(
@@ -103,12 +127,36 @@ router.post('/', authenticateToken, async (req, res) => {
 // Update jadwal
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
-    const { dapur_id, sekolah_id, tanggal, waktu_kirim, waktu_terima, jumlah_porsi, status, catatan } = req.body;
+    const { dapur_id, sekolah_id, tanggal, waktu_kirim, waktu_terima, jumlah_porsi, status, catatan, kurir_id } = req.body;
 
     const existing = await get('SELECT id FROM jadwal_distribusi WHERE id = ?', [req.params.id]);
     
     if (!existing) {
       return res.status(404).json({ error: 'Jadwal tidak ditemukan' });
+    }
+
+    const sekolahRelation = await get(
+      `
+        SELECT id
+        FROM dapur_sekolah
+        WHERE dapur_id = ?
+          AND sekolah_id = ?
+          AND status = 'aktif'
+      `,
+      [dapur_id, sekolah_id]
+    );
+    if (!sekolahRelation) {
+      return res.status(400).json({ error: 'Sekolah tidak terdaftar sebagai binaan dapur ini' });
+    }
+
+    if (kurir_id) {
+      const kurirRelation = await get(
+        'SELECT id FROM dapur_kurir WHERE dapur_id = ? AND kurir_id = ?',
+        [dapur_id, kurir_id]
+      );
+      if (!kurirRelation) {
+        return res.status(400).json({ error: 'Kurir tidak terdaftar pada dapur ini' });
+      }
     }
 
     await run(

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import AdminLayout from '@/components/AdminLayout';
@@ -37,6 +37,7 @@ interface JadwalForm {
 interface Dapur { id: number; nama: string; }
 interface Sekolah { id: number; nama: string; }
 interface Kurir { id: number; nama: string; email: string; }
+interface DapurKurirRelation { dapur_id: number; kurir_id: number; }
 
 const statusBadge: Record<string, string> = {
   dalam_pengiriman: 'badge-orange',
@@ -70,6 +71,9 @@ export default function JadwalPage() {
   const [dapurList, setDapurList] = useState<Dapur[]>([]);
   const [sekolahList, setSekolahList] = useState<Sekolah[]>([]);
   const [kurirList, setKurirList] = useState<Kurir[]>([]);
+  const [filteredSekolahList, setFilteredSekolahList] = useState<Sekolah[]>([]);
+  const [filteredKurirList, setFilteredKurirList] = useState<Kurir[]>([]);
+  const [selectedDapurId, setSelectedDapurId] = useState<number | null>(null);
   const [filterTanggal, setFilterTanggal] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [generating, setGenerating] = useState(false);
@@ -77,7 +81,8 @@ export default function JadwalPage() {
   const [generateResult, setGenerateResult] = useState<any>(null);
   const [startingDelivery, setStartingDelivery] = useState<number | null>(null);
 
-  const { register, handleSubmit, reset } = useForm<JadwalForm>();
+  const { register, handleSubmit, reset, setValue, getValues } = useForm<JadwalForm>();
+  const isAdmin = user?.role === 'admin_bgn' || user?.role === 'admin_daerah';
 
   useEffect(() => {
     if (authLoading) return;
@@ -98,7 +103,6 @@ export default function JadwalPage() {
       ];
 
       // Only fetch kurir list if user has permission (admin roles)
-      const isAdmin = user?.role === 'admin_bgn' || user?.role === 'admin_daerah';
       if (isAdmin) {
         fetchPromises.push(api.get('/kurir'));
       } else {
@@ -110,9 +114,48 @@ export default function JadwalPage() {
       setDapurList(dapurRes.data);
       setSekolahList(sekolahRes.data);
       setKurirList(kurirRes.data);
+      setFilteredSekolahList(sekolahRes.data);
+      setFilteredKurirList(isAdmin ? kurirRes.data : []);
     } catch (error) { console.error('Error fetching data:', error); }
     finally { setLoading(false); }
   };
+
+  const fetchRelatedByDapur = useCallback(async (dapurId: number) => {
+    try {
+      const sekolahRes = await api.get(`/dapur/${dapurId}/sekolah`);
+      setFilteredSekolahList(sekolahRes.data);
+
+      const currentSekolahId = getValues('sekolah_id');
+      const sekolahValid = sekolahRes.data.some((s: Sekolah) => s.id === currentSekolahId);
+      if (!sekolahValid) {
+        setValue('sekolah_id', sekolahRes.data[0]?.id || 0);
+      }
+
+      if (isAdmin) {
+        const dapurKurirRes = await api.get('/dapur-kurir', { params: { dapur_id: dapurId } });
+        const kurirIds = new Set((dapurKurirRes.data as DapurKurirRelation[]).map((r) => r.kurir_id));
+        const mappedKurir = kurirList.filter((k) => kurirIds.has(k.id));
+        setFilteredKurirList(mappedKurir);
+
+        const currentKurirId = getValues('kurir_id');
+        const kurirValid = mappedKurir.some((k) => k.id === currentKurirId);
+        if (!kurirValid) {
+          setValue('kurir_id', 0);
+        }
+      } else {
+        setFilteredKurirList([]);
+      }
+    } catch (error) {
+      console.error('Error fetching related dapur data:', error);
+      setFilteredSekolahList([]);
+      setFilteredKurirList([]);
+    }
+  }, [getValues, isAdmin, kurirList, setValue]);
+
+  useEffect(() => {
+    if (!showForm || !selectedDapurId) return;
+    fetchRelatedByDapur(selectedDapurId);
+  }, [showForm, selectedDapurId, fetchRelatedByDapur]);
 
   const onSubmit = async (data: JadwalForm) => {
     try {
@@ -126,6 +169,7 @@ export default function JadwalPage() {
 
   const handleEdit = (jadwal: Jadwal) => {
     setEditingId(jadwal.id);
+    setSelectedDapurId(jadwal.dapur_id);
     reset({
       dapur_id: jadwal.dapur_id,
       sekolah_id: jadwal.sekolah_id,
@@ -144,7 +188,14 @@ export default function JadwalPage() {
     catch (error: any) { alert(error.response?.data?.error || 'Terjadi kesalahan'); }
   };
 
-  const handleCloseForm = () => { setShowForm(false); setEditingId(null); reset(); };
+  const handleCloseForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setSelectedDapurId(null);
+    setFilteredSekolahList(sekolahList);
+    setFilteredKurirList(isAdmin ? kurirList : []);
+    reset();
+  };
 
   const handleGenerateWeekly = async () => {
     try {
@@ -193,7 +244,21 @@ export default function JadwalPage() {
       {/* Filter bar */}
       <div className="filter-bar flex-wrap gap-2">
         {canCreateJadwal && (
-          <button onClick={() => { setEditingId(null); reset({ dapur_id: dapurList[0]?.id || 0, sekolah_id: sekolahList[0]?.id || 0, tanggal: new Date().toISOString().split('T')[0], waktu_kirim: '07:00', jumlah_porsi: 100, catatan: '', kurir_id: 0 }); setShowForm(true); }} className="btn-primary">
+          <button onClick={() => {
+            const defaultDapurId = dapurList[0]?.id || 0;
+            setEditingId(null);
+            setSelectedDapurId(defaultDapurId || null);
+            reset({
+              dapur_id: defaultDapurId,
+              sekolah_id: 0,
+              tanggal: new Date().toISOString().split('T')[0],
+              waktu_kirim: '07:00',
+              jumlah_porsi: 100,
+              catatan: '',
+              kurir_id: 0
+            });
+            setShowForm(true);
+          }} className="btn-primary">
             <Plus size={16} /> Tambah Jadwal
           </button>
         )}
@@ -248,14 +313,32 @@ export default function JadwalPage() {
             <div className="form-grid">
               <div>
                 <label className="form-label">Dapur</label>
-                <select {...register('dapur_id', { required: true, valueAsNumber: true })} className="select">
+                <select
+                  {...register('dapur_id', {
+                    required: true,
+                    valueAsNumber: true,
+                    onChange: (e) => setSelectedDapurId(Number(e.target.value) || null)
+                  })}
+                  className="select"
+                >
                   {dapurList.map((d) => <option key={d.id} value={d.id}>{d.nama}</option>)}
                 </select>
               </div>
               <div>
                 <label className="form-label">Sekolah</label>
-                <select {...register('sekolah_id', { required: true, valueAsNumber: true })} className="select">
-                  {sekolahList.map((s) => <option key={s.id} value={s.id}>{s.nama}</option>)}
+                <select
+                  {...register('sekolah_id', {
+                    required: true,
+                    valueAsNumber: true,
+                    validate: (value) => value > 0
+                  })}
+                  className="select"
+                >
+                  {filteredSekolahList.length > 0 ? (
+                    filteredSekolahList.map((s) => <option key={s.id} value={s.id}>{s.nama}</option>)
+                  ) : (
+                    <option value={0}>-- Tidak ada sekolah binaan --</option>
+                  )}
                 </select>
               </div>
               <div>
@@ -274,7 +357,7 @@ export default function JadwalPage() {
                 <label className="form-label">Kurir (Opsional)</label>
                 <select {...register('kurir_id', { valueAsNumber: true })} className="select">
                   <option value={0}>-- Pilih Kurir --</option>
-                  {kurirList.map((k) => <option key={k.id} value={k.id}>{k.nama}</option>)}
+                  {filteredKurirList.map((k) => <option key={k.id} value={k.id}>{k.nama}</option>)}
                 </select>
               </div>
               <div className="md:col-span-2">
