@@ -123,9 +123,7 @@ export default function PengirimanPage() {
   const getFotoUrl = (filename: string | null) => {
     if (!filename) return null;
     if (filename.startsWith('http')) return filename;
-    // API_URL includes /api suffix, remove it for static file access
-    const baseUrl = API_URL.replace(/\/api$/, '');
-    return `${baseUrl}/uploads/${filename}`;
+    return `${API_URL}/uploads/${filename}`;
   };
 
   return (

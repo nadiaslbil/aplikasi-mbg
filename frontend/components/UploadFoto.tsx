@@ -118,10 +118,8 @@ export default function UploadFoto({ onUploadSuccess, currentFoto, maxFileSize =
     if (!filename) return null;
     // If it's a full URL from API, use it directly
     if (filename.startsWith('http')) return filename;
-    // Otherwise, construct the URL from backend
-    // API_URL includes /api suffix, remove it for static file access
-    const baseUrl = API_URL.replace(/\/api$/, '');
-    return `${baseUrl}/uploads/${filename}`;
+    // Keep /api prefix to work with Vercel rewrite (/api/* -> backend).
+    return `${API_URL}/uploads/${filename}`;
   };
 
   // Show current photo if exists and no new preview
