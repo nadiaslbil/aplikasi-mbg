@@ -274,23 +274,32 @@ export default function JadwalPage() {
         )}
         
         {/* Filters */}
-        <div className="flex items-center gap-2 ml-auto">
-          <Filter size={14} className="text-zinc-400" />
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="input text-sm"
-          >
-            <option value="">Semua Status</option>
-            <option value="dalam_pengiriman">Dalam Pengiriman</option>
-            <option value="terjadwal">Terjadwal</option>
-            <option value="diterima">Diterima</option>
-            <option value="gagal">Gagal</option>
-          </select>
-          
-          <Calendar size={16} className="text-zinc-400" />
-          <input type="date" value={filterTanggal} onChange={(e) => setFilterTanggal(e.target.value)} className="input" />
-          
+        <div className="ml-auto flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
+          <div className="relative min-w-[180px] flex-1 sm:flex-none">
+            <Filter size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="input w-full pl-9!"
+            >
+              <option value="">Semua Status</option>
+              <option value="dalam_pengiriman">Dalam Pengiriman</option>
+              <option value="terjadwal">Terjadwal</option>
+              <option value="diterima">Diterima</option>
+              <option value="gagal">Gagal</option>
+            </select>
+          </div>
+
+          <div className="relative min-w-[180px] flex-1 sm:flex-none">
+            <Calendar size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+            <input
+              type="date"
+              value={filterTanggal}
+              onChange={(e) => setFilterTanggal(e.target.value)}
+              className="input w-full pl-9!"
+            />
+          </div>
+
           {(filterStatus || filterTanggal) && (
             <button 
               onClick={() => { setFilterStatus(''); setFilterTanggal(''); }}
