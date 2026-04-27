@@ -89,20 +89,29 @@ export default function KurirPage() {
     fetchTugas();
   }, [user, authLoading, filterStatus]);
 
-  // Auto-send location every 15s when tracking
+  // Auto-send location every 15s when tracking.
+  // If modal is open, prioritize selected task; otherwise fallback to first active task.
   useEffect(() => {
     if (!isTracking || currentLat === null || currentLng === null) return;
     const interval = setInterval(async () => {
-      const aktif = tugasList.find(t => t.status === 'dalam_perjalanan');
+      const aktif = selectedTugas?.status === 'dalam_perjalanan'
+        ? selectedTugas
+        : tugasList.find(t => t.status === 'dalam_perjalanan');
       if (aktif) {
         try {
-          await sendLocation(aktif.id, currentLat, currentLng, 'dalam_perjalanan');
+          await sendLocation(
+            aktif.id,
+            currentLat,
+            currentLng,
+            updateStatus || 'dalam_perjalanan',
+            updateCatatan || undefined
+          );
           setLastUpdate(new Date().toLocaleTimeString('id-ID'));
         } catch (err) { console.error('Auto-send error:', err); }
       }
     }, 15000);
     return () => clearInterval(interval);
-  }, [isTracking, currentLat, currentLng, tugasList, sendLocation]);
+  }, [isTracking, currentLat, currentLng, tugasList, selectedTugas, sendLocation, updateStatus, updateCatatan]);
 
   // Cleanup geolocation on unmount
   useEffect(() => {
@@ -536,14 +545,38 @@ export default function KurirPage() {
                     📍 {currentLat.toFixed(6)}, {currentLng.toFixed(6)}
                   </p>
                 )}
-                <button
-                  type="button"
-                  onClick={() => sendLocationOnce(selectedTugas.id)}
-                  disabled={currentLat === null}
-                  className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition"
-                >
-                  <Send size={14} /> Kirim Lokasi Sekarang
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => sendLocationOnce(selectedTugas.id)}
+                    disabled={currentLat === null}
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition"
+                  >
+                    <Send size={14} /> Kirim Lokasi Sekarang
+                  </button>
+                  {!isTracking ? (
+                    <button
+                      type="button"
+                      onClick={startTracking}
+                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition"
+                    >
+                      <Navigation size={14} /> Live Mode
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={stopTracking}
+                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition"
+                    >
+                      <StopCircle size={14} /> Stop Live
+                    </button>
+                  )}
+                </div>
+                {isTracking && (
+                  <p className="text-xs text-green-600 mt-2">
+                    Live tracking aktif - mengirim lokasi setiap 15 detik
+                  </p>
+                )}
               </div>
 
               {/* Status */}
