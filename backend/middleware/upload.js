@@ -2,34 +2,31 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Ensure uploads directory exists - Only in local development
-const uploadsDir = path.join(process.cwd(), 'uploads');
+// Use writable directory on each environment.
+// Vercel allows writes only under /tmp.
+const uploadsDir = process.env.VERCEL
+  ? path.join('/tmp', 'uploads')
+  : path.join(process.cwd(), 'uploads');
 
-// Only try to create the directory if we are not on Vercel
-if (!process.env.VERCEL) {
-  if (!fs.existsSync(uploadsDir)) {
-    try {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    } catch (err) {
-      console.warn('Warning: Could not create uploads directory:', err.message);
-    }
+if (!fs.existsSync(uploadsDir)) {
+  try {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  } catch (err) {
+    console.warn('Warning: Could not create uploads directory:', err.message);
   }
 }
 
-// Storage configuration - Use memory storage for Vercel, disk for local
-// Note: Vercel serverless functions have a read-only filesystem except for /tmp
-const storage = process.env.VERCEL 
-  ? multer.memoryStorage() 
-  : multer.diskStorage({
-      destination: function (req, file, cb) {
-        cb(null, uploadsDir);
-      },
-      filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const ext = path.extname(file.originalname);
-        cb(null, `bukti-${uniqueSuffix}${ext}`);
-      }
-    });
+// Always use disk storage so uploaded files can be served by static route.
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadsDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, `bukti-${uniqueSuffix}${ext}`);
+  }
+});
 
 const fileFilter = (req, file, cb) => {
   const allowedTypes = /jpeg|jpg|png|gif|webp|heic|heif/;
