@@ -56,6 +56,34 @@ router.get('/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// Get sekolah binaan untuk dapur tertentu
+router.get('/:id/sekolah', authenticateToken, async (req, res) => {
+  try {
+    const dapurId = req.params.id;
+
+    // Ensure dapur exists
+    const dapur = await get('SELECT id, nama FROM dapur_supplier WHERE id = ?', [dapurId]);
+    if (!dapur) return res.status(404).json({ error: 'Dapur tidak ditemukan' });
+
+    const rows = await all(
+      `
+        SELECT s.*, dsk.hari_kirim, dsk.jumlah_porsi, dsk.status as rel_status
+        FROM dapur_sekolah dsk
+        JOIN sekolah s ON dsk.sekolah_id = s.id
+        WHERE dsk.dapur_id = ?
+          AND dsk.status = 'aktif'
+        ORDER BY s.nama ASC
+      `,
+      [dapurId]
+    );
+
+    res.json(rows);
+  } catch (error) {
+    console.error('Get dapur sekolah error:', error);
+    res.status(500).json({ error: 'Terjadi kesalahan server' });
+  }
+});
+
 // Create dapur
 router.post('/', authenticateToken, async (req, res) => {
   try {
