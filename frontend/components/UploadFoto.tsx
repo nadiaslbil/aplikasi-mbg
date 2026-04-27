@@ -2,7 +2,6 @@
 
 import { useState, useRef, ChangeEvent } from 'react';
 import { Upload, X, Image as ImageIcon, AlertCircle, CheckCircle } from 'lucide-react';
-import api from '@/lib/api';
 import { API_URL } from '@/lib/config';
 
 interface UploadFotoProps {
@@ -48,16 +47,30 @@ export default function UploadFoto({ onUploadSuccess, currentFoto, maxFileSize =
     try {
       const formData = new FormData();
       formData.append('file', file);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/upload`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: formData,
+      });
 
-      const response = await api.post('/upload', formData);
+      const contentType = response.headers.get('content-type') || '';
+      const payload = contentType.includes('application/json')
+        ? await response.json()
+        : null;
 
-      if (response.data.filename) {
-        onUploadSuccess(response.data.filename);
+      if (!response.ok) {
+        throw new Error(payload?.error || 'Gagal mengupload foto');
+      }
+
+      if (payload?.filename) {
+        onUploadSuccess(payload.filename);
+      } else {
+        throw new Error('Upload berhasil tetapi nama file tidak diterima');
       }
     } catch (err: any) {
       console.error('Upload error:', err);
       setError(
-        err.response?.data?.error ||
         err.message ||
         'Gagal mengupload foto'
       );
