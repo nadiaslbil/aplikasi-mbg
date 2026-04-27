@@ -45,35 +45,6 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// ENDPOINT DARURAT: Jalankan ini sekali untuk buat tabel & user admin
-app.get('/api/seed', async (req, res) => {
-  try {
-    // Buat tabel users jika belum ada
-    await run(`
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        nama TEXT,
-        email TEXT UNIQUE,
-        password_hash TEXT,
-        role TEXT
-      )
-    `);
-
-    // Cek apakah admin sudah ada
-    const admin = await get('SELECT * FROM users WHERE email = ?', ['admin@mbg.go.id']);
-    if (!admin) {
-      const hash = bcrypt.hashSync('admin123', 10);
-      await run('INSERT INTO users (nama, email, password_hash, role) VALUES (?, ?, ?, ?)', 
-        ['Admin BGN', 'admin@mbg.go.id', hash, 'admin_bgn']);
-      return res.json({ message: 'Database seeded successfully. Admin created.' });
-    }
-    
-    res.json({ message: 'Database already has data.' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;

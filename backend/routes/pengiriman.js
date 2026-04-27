@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { all, get, run } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
+const { requireRole, permissions } = require('../middleware/rbac');
 
 // Get all pengiriman
 router.get('/', authenticateToken, async (req, res) => {
@@ -96,7 +97,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 });
 
 // Create pengiriman
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, requireRole(permissions.pengiriman.create), async (req, res) => {
   try {
     const { jadwal_id, kurir_id } = req.body;
 
@@ -126,14 +127,19 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // Update pengiriman (termasuk location tracking)
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, requireRole(permissions.pengiriman.updateStatus), async (req, res) => {
   try {
     const { latitude, longitude, status, bukti_foto, catatan, waktu_berangkat, waktu_tiba } = req.body;
 
-    const existing = await get('SELECT id FROM pengiriman WHERE id = ?', [req.params.id]);
+    const existing = await get('SELECT * FROM pengiriman WHERE id = ?', [req.params.id]);
     
     if (!existing) {
       return res.status(404).json({ error: 'Pengiriman tidak ditemukan' });
+    }
+
+    // Ownership check: Kurir can only update their own delivery
+    if (req.user.role === 'kurir' && existing.kurir_id !== req.user.id) {
+      return res.status(403).json({ error: 'Anda hanya bisa mengupdate pengiriman Anda sendiri' });
     }
 
     await run(
@@ -179,13 +185,18 @@ router.put('/:id', authenticateToken, async (req, res) => {
 });
 
 // Update lokasi kurir (compat endpoint for frontend live tracking)
-router.put('/:id/location', authenticateToken, async (req, res) => {
+router.put('/:id/location', authenticateToken, requireRole(permissions.pengiriman.updateStatus), async (req, res) => {
   try {
     const { latitude, longitude, status, catatan } = req.body;
-    const existing = await get('SELECT id FROM pengiriman WHERE id = ?', [req.params.id]);
+    const existing = await get('SELECT * FROM pengiriman WHERE id = ?', [req.params.id]);
 
     if (!existing) {
       return res.status(404).json({ error: 'Pengiriman tidak ditemukan' });
+    }
+
+    // Ownership check: Kurir can only update their own location
+    if (req.user.role === 'kurir' && existing.kurir_id !== req.user.id) {
+      return res.status(403).json({ error: 'Anda hanya bisa mengupdate lokasi pengiriman Anda sendiri' });
     }
 
     await run(

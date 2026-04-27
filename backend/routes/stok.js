@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { all, get, run } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
+const { requireRole, permissions } = require('../middleware/rbac');
 
 // Get all stok bahan
 router.get('/', authenticateToken, async (req, res) => {
@@ -59,7 +60,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Create stok
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, requireRole(permissions.stok.create), async (req, res) => {
   try {
     const { dapur_id, nama_bahan, jumlah, satuan, expired_date } = req.body;
 
@@ -86,14 +87,24 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // Update stok
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, requireRole(permissions.stok.update), async (req, res) => {
   try {
     const { nama_bahan, jumlah, satuan, expired_date } = req.body;
 
-    const existing = await get('SELECT id FROM stok_bahan WHERE id = ?', [req.params.id]);
+    const existing = await get(`
+      SELECT sb.*, ds.user_id 
+      FROM stok_bahan sb
+      JOIN dapur_supplier ds ON sb.dapur_id = ds.id
+      WHERE sb.id = ?
+    `, [req.params.id]);
     
     if (!existing) {
       return res.status(404).json({ error: 'Stok tidak ditemukan' });
+    }
+
+    // Ownership check for supplier
+    if (req.user.role === 'supplier' && existing.user_id !== req.user.id) {
+      return res.status(403).json({ error: 'Anda hanya bisa mengubah stok dapur Anda sendiri' });
     }
 
     await run(
@@ -114,7 +125,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 });
 
 // Delete stok
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, requireRole(permissions.stok.delete), async (req, res) => {
   try {
     const existing = await get('SELECT id FROM stok_bahan WHERE id = ?', [req.params.id]);
     

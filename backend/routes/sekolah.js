@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { all, get, run } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
+const { requireRole, permissions } = require('../middleware/rbac');
 
 // Get all sekolah
 router.get('/', authenticateToken, async (req, res) => {
@@ -133,7 +134,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 });
 
 // Create sekolah
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, requireRole(permissions.sekolah.create), async (req, res) => {
   try {
     const { nama, alamat, latitude, longitude, kecamatan, kabupaten, provinsi, jumlah_siswa, kontak } = req.body;
 
@@ -160,7 +161,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // Update sekolah
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, requireRole(permissions.sekolah.update), async (req, res) => {
   try {
     const { nama, alamat, latitude, longitude, kecamatan, kabupaten, provinsi, jumlah_siswa, kontak, status } = req.body;
 
@@ -202,7 +203,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 });
 
 // Delete sekolah
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, requireRole(permissions.sekolah.delete), async (req, res) => {
   try {
     const existing = await get('SELECT id FROM sekolah WHERE id = ?', [req.params.id]);
     

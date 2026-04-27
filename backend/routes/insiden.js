@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { all, get, run } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
+const { requireRole, permissions } = require('../middleware/rbac');
 
 // Get all insiden
 router.get('/', authenticateToken, async (req, res) => {
@@ -125,7 +126,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // Update insiden (tindak lanjut)
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, requireRole(permissions.insiden.update), async (req, res) => {
   try {
     const { status, ditangani_oleh, tindak_lanjut } = req.body;
 
@@ -148,6 +149,23 @@ router.put('/:id', authenticateToken, async (req, res) => {
     res.json({ message: 'Insiden berhasil diupdate' });
   } catch (error) {
     console.error('Update insiden error:', error);
+    res.status(500).json({ error: 'Terjadi kesalahan server' });
+  }
+});
+
+// Delete insiden
+router.delete('/:id', authenticateToken, requireRole(permissions.insiden.delete), async (req, res) => {
+  try {
+    const existing = await get('SELECT id FROM insiden WHERE id = ?', [req.params.id]);
+    
+    if (!existing) {
+      return res.status(404).json({ error: 'Insiden tidak ditemukan' });
+    }
+
+    await run('DELETE FROM insiden WHERE id = ?', [req.params.id]);
+    res.json({ message: 'Insiden berhasil dihapus' });
+  } catch (error) {
+    console.error('Delete insiden error:', error);
     res.status(500).json({ error: 'Terjadi kesalahan server' });
   }
 });

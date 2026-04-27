@@ -3,6 +3,8 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { get, run } = require('../database');
+const { authenticateToken } = require('../middleware/auth');
+const { requireRole } = require('../middleware/rbac');
 
 // Login
 router.post('/login', async (req, res) => {
@@ -53,7 +55,7 @@ router.post('/login', async (req, res) => {
 });
 
 // Register
-router.post('/register', async (req, res) => {
+router.post('/register', authenticateToken, requireRole(['admin_bgn']), async (req, res) => {
   try {
     const { nama, email, password, role } = req.body;
 

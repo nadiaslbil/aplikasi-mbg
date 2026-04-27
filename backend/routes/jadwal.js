@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { all, get, run } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
+const { requireRole, permissions } = require('../middleware/rbac');
 
 // Get all jadwal distribusi
 router.get('/', authenticateToken, async (req, res) => {
@@ -114,7 +115,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 });
 
 // Create jadwal
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, requireRole(permissions.jadwal.create), async (req, res) => {
   try {
     const { dapur_id, sekolah_id, tanggal, waktu_kirim, jumlah_porsi, catatan, kurir_id } = req.body;
 
@@ -165,7 +166,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // Update jadwal
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, requireRole(permissions.jadwal.update), async (req, res) => {
   try {
     const { dapur_id, sekolah_id, tanggal, waktu_kirim, waktu_terima, jumlah_porsi, status, catatan, kurir_id } = req.body;
 
@@ -228,7 +229,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 });
 
 // Delete jadwal
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, requireRole(permissions.jadwal.delete), async (req, res) => {
   try {
     const existing = await get('SELECT id FROM jadwal_distribusi WHERE id = ?', [req.params.id]);
     

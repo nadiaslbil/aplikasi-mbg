@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { all, get, run } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
+const { requireRole, permissions } = require('../middleware/rbac');
 
 // Get all dapur supplier
 router.get('/', authenticateToken, async (req, res) => {
@@ -107,7 +108,7 @@ router.get('/:id/sekolah', authenticateToken, async (req, res) => {
 });
 
 // Create dapur
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, requireRole(permissions.dapur.create), async (req, res) => {
   try {
     const { nama, alamat, latitude, longitude, kecamatan, kabupaten, provinsi, kapasitas_harian, kontak, penanggung_jawab } = req.body;
 
@@ -145,14 +146,19 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // Update dapur
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, requireRole([...permissions.dapur.update, ...permissions.dapur.updateOwn]), async (req, res) => {
   try {
     const { nama, alamat, latitude, longitude, kecamatan, kabupaten, provinsi, kapasitas_harian, kontak, penanggung_jawab, status } = req.body;
 
-    const existing = await get('SELECT id FROM dapur_supplier WHERE id = ?', [req.params.id]);
+    const existing = await get('SELECT * FROM dapur_supplier WHERE id = ?', [req.params.id]);
     
     if (!existing) {
       return res.status(404).json({ error: 'Dapur tidak ditemukan' });
+    }
+
+    // Ownership check for supplier
+    if (req.user.role === 'supplier' && existing.user_id !== req.user.id) {
+      return res.status(403).json({ error: 'Anda hanya bisa mengubah dapur milik Anda sendiri' });
     }
 
     await run(
@@ -188,7 +194,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 });
 
 // Delete dapur
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, requireRole(permissions.dapur.delete), async (req, res) => {
   try {
     const existing = await get('SELECT id FROM dapur_supplier WHERE id = ?', [req.params.id]);
     
