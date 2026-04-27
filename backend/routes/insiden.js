@@ -18,6 +18,42 @@ router.get('/', authenticateToken, async (req, res) => {
     `;
     const params = [];
 
+    if (req.user?.role === 'supplier' || req.user?.role === 'kurir') {
+      let accessibleDapurIds = [];
+      if (req.user.role === 'supplier') {
+        const rows = await all('SELECT id FROM dapur_supplier WHERE user_id = ?', [req.user.id]);
+        accessibleDapurIds = rows.map((r) => r.id);
+      } else {
+        const rows = await all(
+          "SELECT dapur_id FROM dapur_kurir WHERE kurir_id = ? AND status = 'aktif'",
+          [req.user.id]
+        );
+        accessibleDapurIds = rows.map((r) => r.dapur_id);
+      }
+
+      if (accessibleDapurIds.length === 0) {
+        return res.json([]);
+      }
+
+      const placeholders = accessibleDapurIds.map(() => '?').join(', ');
+      query += `
+        AND (
+          i.dapur_id IN (${placeholders})
+          OR (
+            i.dapur_id IS NULL
+            AND EXISTS (
+              SELECT 1
+              FROM dapur_sekolah dsk
+              WHERE dsk.sekolah_id = i.sekolah_id
+                AND dsk.status = 'aktif'
+                AND dsk.dapur_id IN (${placeholders})
+            )
+          )
+        )
+      `;
+      params.push(...accessibleDapurIds, ...accessibleDapurIds);
+    }
+
     if (tipe) {
       query += ' AND i.tipe = ?';
       params.push(tipe);

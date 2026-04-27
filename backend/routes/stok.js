@@ -16,6 +16,28 @@ router.get('/', authenticateToken, async (req, res) => {
     `;
     const params = [];
 
+    if (req.user?.role === 'supplier' || req.user?.role === 'kurir') {
+      let accessibleDapurIds = [];
+      if (req.user.role === 'supplier') {
+        const rows = await all('SELECT id FROM dapur_supplier WHERE user_id = ?', [req.user.id]);
+        accessibleDapurIds = rows.map((r) => r.id);
+      } else {
+        const rows = await all(
+          "SELECT dapur_id FROM dapur_kurir WHERE kurir_id = ? AND status = 'aktif'",
+          [req.user.id]
+        );
+        accessibleDapurIds = rows.map((r) => r.dapur_id);
+      }
+
+      if (accessibleDapurIds.length === 0) {
+        return res.json([]);
+      }
+
+      const placeholders = accessibleDapurIds.map(() => '?').join(', ');
+      query += ` AND sb.dapur_id IN (${placeholders})`;
+      params.push(...accessibleDapurIds);
+    }
+
     if (dapur_id) {
       query += ' AND sb.dapur_id = ?';
       params.push(dapur_id);
