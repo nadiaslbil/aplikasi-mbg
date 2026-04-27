@@ -32,14 +32,14 @@ const storage = process.env.VERCEL
     });
 
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = /jpeg|jpg|png|gif|webp/;
+  const allowedTypes = /jpeg|jpg|png|gif|webp|heic|heif/;
   const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
   const mimetype = allowedTypes.test(file.mimetype);
 
   if (mimetype && extname) {
     cb(null, true);
   } else {
-    cb(new Error('Hanya gambar yang diperbolehkan.'));
+    cb(new Error('Hanya gambar (JPG, PNG, GIF, WebP, HEIC/HEIF) yang diperbolehkan.'));
   }
 };
 

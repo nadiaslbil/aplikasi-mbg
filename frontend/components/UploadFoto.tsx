@@ -49,11 +49,7 @@ export default function UploadFoto({ onUploadSuccess, currentFoto, maxFileSize =
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await api.post('/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const response = await api.post('/upload', formData);
 
       if (response.data.filename) {
         onUploadSuccess(response.data.filename);
