@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import AdminLayout from '@/components/AdminLayout';
@@ -89,29 +89,30 @@ export default function KurirPage() {
     fetchTugas();
   }, [user, authLoading, filterStatus]);
 
+  const activeTask = useMemo(
+    () => tugasList.find((t) => t.status === 'dalam_perjalanan') || null,
+    [tugasList]
+  );
+
   // Auto-send location every 15s when tracking.
-  // If modal is open, prioritize selected task; otherwise fallback to first active task.
+  // Always use the active task status from task list to avoid accidental status changes from modal state.
   useEffect(() => {
     if (!isTracking || currentLat === null || currentLng === null) return;
     const interval = setInterval(async () => {
-      const aktif = selectedTugas?.status === 'dalam_perjalanan'
-        ? selectedTugas
-        : tugasList.find(t => t.status === 'dalam_perjalanan');
-      if (aktif) {
+      if (activeTask) {
         try {
           await sendLocation(
-            aktif.id,
+            activeTask.id,
             currentLat,
             currentLng,
-            updateStatus || 'dalam_perjalanan',
-            updateCatatan || undefined
+            activeTask.status || 'dalam_perjalanan'
           );
           setLastUpdate(new Date().toLocaleTimeString('id-ID'));
         } catch (err) { console.error('Auto-send error:', err); }
       }
     }, 15000);
     return () => clearInterval(interval);
-  }, [isTracking, currentLat, currentLng, tugasList, selectedTugas, sendLocation, updateStatus, updateCatatan]);
+  }, [isTracking, currentLat, currentLng, activeTask, sendLocation]);
 
   // Cleanup geolocation on unmount
   useEffect(() => {
@@ -154,6 +155,7 @@ export default function KurirPage() {
 
   // Geolocation functions
   const startTracking = useCallback(() => {
+    if (isTracking || watchId !== null) return;
     if (!navigator.geolocation) {
       setLocationError('Geolocation tidak didukung di browser ini');
       return;
@@ -184,12 +186,28 @@ export default function KurirPage() {
     );
     setWatchId(id);
     setIsTracking(true);
-  }, []);
+  }, [isTracking, watchId]);
 
   const stopTracking = useCallback(() => {
     if (watchId !== null) { navigator.geolocation.clearWatch(watchId); setWatchId(null); }
     setIsTracking(false);
   }, [watchId]);
+
+  // Auto-start GPS when courier has an active delivery.
+  // Browser still enforces permission rules; this only removes manual button dependency in normal flow.
+  useEffect(() => {
+    if (!activeTask) return;
+    if (isTracking || watchId !== null) return;
+    if (locationError?.toLowerCase().includes('izin lokasi ditolak')) return;
+    startTracking();
+  }, [activeTask, isTracking, watchId, locationError, startTracking]);
+
+  // Auto-stop GPS when no active deliveries remain.
+  useEffect(() => {
+    if (activeTask) return;
+    if (!isTracking) return;
+    stopTracking();
+  }, [activeTask, isTracking, stopTracking]);
 
   const sendLocationOnce = useCallback(async (pengirimanId: number) => {
     if (currentLat === null || currentLng === null) {
