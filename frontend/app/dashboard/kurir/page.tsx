@@ -16,6 +16,7 @@ import {
   Clock,
   MapPin,
   Navigation,
+  Camera,
   X,
   Package,
   School,
