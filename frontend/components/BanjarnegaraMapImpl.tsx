@@ -48,6 +48,18 @@ interface MapData {
     kapasitas_harian: number;
     status: string;
   }>;
+  couriers?: Array<{
+    id: number;
+    latitude: number;
+    longitude: number;
+    status: string;
+    kurir_nama: string;
+    sekolah_nama: string;
+    catatan?: string | null;
+    updated_at?: string;
+    sekolah_lat?: number;
+    sekolah_lng?: number;
+  }>;
 }
 
 interface GeoJSONFeature {
@@ -75,6 +87,18 @@ function MapUpdater({ center }: { center: [number, number] }) {
 export default function BanjarnegaraMapImpl() {
   const [mapData, setMapData] = useState<MapData | null>(null);
   const [geojson, setGeojson] = useState<any>(null);
+  const [dbCouriers, setDbCouriers] = useState<Array<{
+    id: number;
+    latitude: number;
+    longitude: number;
+    status: string;
+    kurir_nama: string;
+    sekolah_nama: string;
+    catatan?: string | null;
+    updated_at?: string;
+    sekolah_lat?: number;
+    sekolah_lng?: number;
+  }>>([]);
   const [loading, setLoading] = useState(true);
   const [showKecamatan, setShowKecamatan] = useState(true);
   const [showSekolah, setShowSekolah] = useState(true);
@@ -86,6 +110,11 @@ export default function BanjarnegaraMapImpl() {
 
   useEffect(() => {
     fetchData();
+    fetchActiveCouriers();
+
+    // Fallback polling for production when Socket.IO is unavailable.
+    const interval = setInterval(fetchActiveCouriers, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchData = async () => {
@@ -93,6 +122,9 @@ export default function BanjarnegaraMapImpl() {
       // Fetch map data from API
       const mapResponse = await api.get('/dashboard/map-data');
       setMapData(mapResponse.data);
+      if (Array.isArray(mapResponse.data?.couriers)) {
+        setDbCouriers(mapResponse.data.couriers);
+      }
 
       // Load GeoJSON from public folder
       const geojsonResponse = await fetch('/banjarnegara-kecamatan-geojson.json');
@@ -104,6 +136,36 @@ export default function BanjarnegaraMapImpl() {
       setLoading(false);
     }
   };
+
+  const fetchActiveCouriers = async () => {
+    try {
+      const response = await api.get('/pengiriman/tracking/active');
+      setDbCouriers(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error('Error fetching active couriers:', error);
+    }
+  };
+
+  // Merge socket couriers + DB couriers so map still works without socket.
+  const mergedCouriers = (() => {
+    const fromDb = dbCouriers.map((c) => ({
+      pengirimanId: c.id,
+      kurirNama: c.kurir_nama,
+      sekolahNama: c.sekolah_nama,
+      latitude: c.latitude,
+      longitude: c.longitude,
+      status: c.status,
+      catatan: c.catatan || null,
+      sekolahLat: c.sekolah_lat || 0,
+      schoolLng: c.sekolah_lng || 0,
+      timestamp: c.updated_at || new Date().toISOString(),
+    }));
+
+    const map = new Map<number, (typeof fromDb)[number]>();
+    fromDb.forEach((c) => map.set(c.pengirimanId, c));
+    couriers.forEach((c) => map.set(c.pengirimanId, c));
+    return Array.from(map.values());
+  })();
 
   // Style for GeoJSON kecamatan boundaries
   const kecamatanStyle = {
@@ -203,7 +265,7 @@ export default function BanjarnegaraMapImpl() {
           }`}
         >
           <Truck size={18} />
-          Kurir Live ({couriers.length})
+          Kurir Live ({mergedCouriers.length})
           {isConnected && (
             <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
           )}
@@ -298,7 +360,7 @@ export default function BanjarnegaraMapImpl() {
           ))}
 
           {/* Live Courier markers */}
-          {showCourier && couriers.map((courier) => (
+          {showCourier && mergedCouriers.map((courier) => (
             <Marker
               key={`courier-${courier.pengirimanId}`}
               position={[courier.latitude, courier.longitude]}
