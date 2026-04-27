@@ -88,7 +88,7 @@ export default function SupplierDashboardPage() {
       description={`Ringkasan aktivitas ${stats?.dapur?.nama || 'dapur Anda'}`}
     >
       {/* Stat cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
         <div className="stat-card">
           <div className="flex items-center justify-between">
             <div>
