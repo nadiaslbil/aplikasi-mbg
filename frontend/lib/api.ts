@@ -14,6 +14,13 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  // Let browser/axios set multipart boundary automatically for FormData.
+  // Keeping default application/json here makes backend receive no file.
+  if (config.data instanceof FormData && config.headers) {
+    delete config.headers['Content-Type'];
+  }
+
   return config;
 });
 
