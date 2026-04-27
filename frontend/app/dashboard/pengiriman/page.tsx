@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation';
 import AdminLayout from '@/components/AdminLayout';
 import api from '@/lib/api';
 import { API_URL } from '@/lib/config';
-import UploadFoto from '@/components/UploadFoto';
 import CourierLocationUpdater from '@/components/CourierLocationUpdater';
+import PengirimanUpdateForm from '@/components/PengirimanUpdateForm';
 import { usePermissions } from '@/hooks/usePermissions';
 import {
   Truck,
@@ -18,8 +18,6 @@ import {
   Edit,
   X,
   Eye,
-  Camera,
-  Navigation,
   Calendar,
   CheckCircle2,
   AlertTriangle,
@@ -253,57 +251,15 @@ export default function PengirimanPage() {
                 />
               )}
 
-              {/* Status */}
-              <div>
-                <label className="form-label">Status Pengiriman</label>
-                <select
-                  value={updateForm.status}
-                  onChange={(e) => setUpdateForm(prev => ({ ...prev, status: e.target.value }))}
-                  className="select"
-                >
-                  <option value="terjadwal">Terjadwal</option>
-                  <option value="dalam_perjalanan">Dalam Perjalanan</option>
-                  <option value="diterima">Diterima</option>
-                  <option value="gagal">Gagal</option>
-                </select>
-              </div>
-
-              {/* Upload Foto */}
-              <div>
-                <label className="form-label flex items-center gap-2">
-                  <Camera size={16} />
-                  Foto Bukti Pengiriman
-                </label>
-                <UploadFoto
-                  onUploadSuccess={handleFotoUpload}
-                  currentFoto={updateForm.bukti_foto}
-                />
-              </div>
-
-              {/* Catatan */}
-              <div>
-                <label className="form-label">Catatan</label>
-                <textarea
-                  value={updateForm.catatan}
-                  onChange={(e) => setUpdateForm(prev => ({ ...prev, catatan: e.target.value }))}
-                  className="input min-h-[100px]"
-                  placeholder="Tambahkan catatan pengiriman..."
-                />
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-2 justify-end pt-4 border-t border-zinc-200">
-                <button
-                  type="button"
-                  onClick={() => setShowUpdateModal(false)}
-                  className="btn-secondary"
-                >
-                  Batal
-                </button>
-                <button type="submit" className="btn-primary">
-                  Simpan Perubahan
-                </button>
-              </div>
+              <PengirimanUpdateForm
+                status={updateForm.status}
+                catatan={updateForm.catatan}
+                foto={updateForm.bukti_foto}
+                onStatusChange={(value) => setUpdateForm((prev) => ({ ...prev, status: value }))}
+                onCatatanChange={(value) => setUpdateForm((prev) => ({ ...prev, catatan: value }))}
+                onFotoUpload={handleFotoUpload}
+                onCancel={() => setShowUpdateModal(false)}
+              />
             </form>
           </div>
         </div>

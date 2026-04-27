@@ -8,7 +8,7 @@ import api from '@/lib/api';
 import { API_URL } from '@/lib/config';
 import { useLiveTracking } from '@/hooks/useLiveTracking';
 import { usePermissions } from '@/hooks/usePermissions';
-import UploadFoto from '@/components/UploadFoto';
+import PengirimanUpdateForm from '@/components/PengirimanUpdateForm';
 import {
   Truck,
   CheckCircle2,
@@ -16,7 +16,6 @@ import {
   Clock,
   MapPin,
   Navigation,
-  Camera,
   X,
   Package,
   School,
@@ -588,52 +587,15 @@ export default function KurirPage() {
                 )}
               </div>
 
-              {/* Status */}
-              <div>
-                <label className="form-label">Status Pengiriman</label>
-                <select
-                  value={updateStatus}
-                  onChange={(e) => setUpdateStatus(e.target.value)}
-                  className="select"
-                >
-                  <option value="dalam_perjalanan">Dalam Perjalanan</option>
-                  <option value="diterima">Diterima</option>
-                  <option value="gagal">Gagal</option>
-                </select>
-              </div>
-
-              {/* Upload Foto */}
-              <div>
-                <label className="form-label flex items-center gap-2">
-                  <Camera size={16} />
-                  Foto Bukti Pengiriman
-                </label>
-                <UploadFoto
-                  onUploadSuccess={(filename) => setUpdateFoto(filename)}
-                  currentFoto={updateFoto}
-                />
-              </div>
-
-              {/* Catatan */}
-              <div>
-                <label className="form-label">Catatan</label>
-                <textarea
-                  value={updateCatatan}
-                  onChange={(e) => setUpdateCatatan(e.target.value)}
-                  className="input min-h-[80px]"
-                  placeholder="Catatan pengiriman..."
-                />
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-2 justify-end pt-4 border-t border-zinc-200">
-                <button type="button" onClick={() => setShowModal(false)} className="btn-secondary">
-                  Batal
-                </button>
-                <button type="submit" className="btn-primary">
-                  Simpan Perubahan
-                </button>
-              </div>
+              <PengirimanUpdateForm
+                status={updateStatus}
+                catatan={updateCatatan}
+                foto={updateFoto}
+                onStatusChange={setUpdateStatus}
+                onCatatanChange={setUpdateCatatan}
+                onFotoUpload={setUpdateFoto}
+                onCancel={() => setShowModal(false)}
+              />
             </form>
           </div>
         </div>
