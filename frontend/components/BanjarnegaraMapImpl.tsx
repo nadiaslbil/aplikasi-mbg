@@ -167,6 +167,14 @@ export default function BanjarnegaraMapImpl() {
     return Array.from(map.values());
   })();
 
+  // Consider courier "live" only if status is in transit and last update is recent.
+  const liveCouriers = mergedCouriers.filter((courier) => {
+    if (courier.status !== 'dalam_perjalanan') return false;
+    const ts = new Date(courier.timestamp).getTime();
+    if (Number.isNaN(ts)) return false;
+    return Date.now() - ts <= 60 * 1000; // 60s freshness window
+  });
+
   // Style for GeoJSON kecamatan boundaries
   const kecamatanStyle = {
     fillColor: '#f59e0b',
@@ -265,7 +273,7 @@ export default function BanjarnegaraMapImpl() {
           }`}
         >
           <Truck size={18} />
-          Kurir Live ({mergedCouriers.length})
+          Kurir Live ({liveCouriers.length})
           {isConnected && (
             <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
           )}
@@ -360,7 +368,7 @@ export default function BanjarnegaraMapImpl() {
           ))}
 
           {/* Live Courier markers */}
-          {showCourier && mergedCouriers.map((courier) => (
+          {showCourier && liveCouriers.map((courier) => (
             <Marker
               key={`courier-${courier.pengirimanId}`}
               position={[courier.latitude, courier.longitude]}
