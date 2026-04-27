@@ -91,9 +91,9 @@ router.get('/map-data', authenticateToken, async (req, res) => {
 
     // Active courier locations
     const couriers = await all(`
-      SELECT p.id, p.latitude, p.longitude, p.status,
+      SELECT p.id, p.latitude, p.longitude, p.status, p.catatan, p.updated_at,
              u.nama as kurir_nama,
-             s.nama as sekolah_nama
+             s.nama as sekolah_nama, s.latitude as sekolah_lat, s.longitude as sekolah_lng
       FROM pengiriman p
       JOIN users u ON p.kurir_id = u.id
       JOIN jadwal_distribusi jd ON p.jadwal_id = jd.id

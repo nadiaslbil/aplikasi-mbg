@@ -195,7 +195,7 @@ router.put('/:id/location', authenticateToken, async (req, res) => {
 router.get('/tracking/active', authenticateToken, async (req, res) => {
   try {
     const query = `
-      SELECT p.id, p.latitude, p.longitude, p.status, p.kurir_id,
+      SELECT p.id, p.latitude, p.longitude, p.status, p.kurir_id, p.catatan, p.updated_at,
              u.nama as kurir_nama, jd.tanggal,
              s.nama as sekolah_nama, s.latitude as sekolah_lat, s.longitude as sekolah_lng
       FROM pengiriman p
