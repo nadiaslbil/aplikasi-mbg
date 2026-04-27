@@ -16,6 +16,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Import database secara langsung
 const { get, run, all, isPostgres } = require('../database');
@@ -33,6 +34,7 @@ app.use('/api/users', require('../routes/users'));
 app.use('/api/kurir', require('../routes/kurir'));
 app.use('/api/dapur-kurir', require('../routes/dapur-kurir'));
 app.use('/api/dapur-sekolah', require('../routes/dapur-sekolah'));
+app.use('/api/upload', require('../routes/upload'));
 
 app.get('/api/health', (req, res) => {
   res.status(200).json({ 

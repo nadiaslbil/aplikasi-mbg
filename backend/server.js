@@ -2,6 +2,7 @@ const express = require('express');
 const dotenv = require('dotenv');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const path = require('path');
 
 dotenv.config();
 const app = express();
@@ -21,6 +22,7 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 let db_methods = {};
 try {
@@ -56,5 +58,7 @@ app.post('/api/auth/login', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+app.use('/api/upload', require('./routes/upload'));
 
 module.exports = app;

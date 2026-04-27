@@ -56,7 +56,11 @@ export default function UploadFoto({ onUploadSuccess, currentFoto, maxFileSize =
       }
     } catch (err: any) {
       console.error('Upload error:', err);
-      setError(err.response?.data?.error || 'Gagal mengupload foto');
+      setError(
+        err.response?.data?.error ||
+        err.message ||
+        'Gagal mengupload foto'
+      );
       setPreview(null);
     } finally {
       setUploading(false);
