@@ -229,11 +229,11 @@ export default function AssignSekolahPage() {
   const hariList = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu'];
 
   return (
-    <AdminLayout currentPage="/dashboard/assign-sekolah" title="Assign Sekolah" description="Kelola penugasan sekolah ke dapur tertentu">
+    <AdminLayout currentPage="/dashboard/assign-sekolah" title="Penugasan Sekolah" description="Kelola penugasan sekolah ke dapur tertentu">
       <div className="p-6">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Assign Sekolah ke Dapur</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Penugasan Sekolah ke Dapur</h1>
           <p className="text-gray-600 mt-1">
             Kelola penugasan sekolah yang dilayani oleh dapur tertentu
           </p>

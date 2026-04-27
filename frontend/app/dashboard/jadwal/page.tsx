@@ -156,7 +156,7 @@ export default function JadwalPage() {
       setShowGenerateModal(true);
       fetchAll(); // Refresh jadwal
     } catch (error: any) {
-      const errorMsg = error.response?.data?.error || 'Gagal generate jadwal. Pastikan sudah assign sekolah ke dapur dan kurir ke dapur.';
+      const errorMsg = error.response?.data?.error || 'Gagal generate jadwal. Pastikan penugasan sekolah ke dapur dan kurir ke dapur sudah dibuat.';
       alert(errorMsg);
     } finally {
       setGenerating(false);
@@ -474,7 +474,7 @@ export default function JadwalPage() {
                   <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="text-sm font-medium text-amber-800">Beberapa jadwal belum ada kurir</p>
-                    <p className="text-xs text-amber-700 mt-1">Assign kurir ke dapur terlebih dahulu di menu &quot;Assign Kurir&quot;</p>
+                    <p className="text-xs text-amber-700 mt-1">Lakukan penugasan kurir ke dapur terlebih dahulu di menu &quot;Penugasan Kurir&quot;</p>
                   </div>
                 </div>
               )}

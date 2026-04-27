@@ -182,11 +182,11 @@ export default function AssignKurirPage() {
   const isAdmin = user?.role === 'admin_bgn' || user?.role === 'admin_daerah';
 
   return (
-    <AdminLayout currentPage="/dashboard/assign-kurir" title="Assign Kurir" description="Kelola penugasan kurir ke dapur tertentu">
+    <AdminLayout currentPage="/dashboard/assign-kurir" title="Penugasan Kurir" description="Kelola penugasan kurir ke dapur tertentu">
       <div className="p-6">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Assign Kurir ke Dapur</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Penugasan Kurir ke Dapur</h1>
           <p className="text-gray-600 mt-1">
             Kelola penugasan kurir untuk mengantar dari dapur tertentu
           </p>
