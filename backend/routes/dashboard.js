@@ -3,6 +3,124 @@ const router = express.Router();
 const { get, all } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
 
+// Supplier dashboard stats (scoped to supplier's dapur)
+router.get('/supplier-stats', authenticateToken, async (req, res) => {
+  try {
+    if (req.user?.role !== 'supplier') {
+      return res.status(403).json({ error: 'Akses ditolak' });
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const dapurRows = await all(
+      'SELECT id, nama, kapasitas_harian FROM dapur_supplier WHERE user_id = ? ORDER BY id ASC',
+      [req.user.id]
+    );
+
+    if (!dapurRows.length) {
+      return res.json({
+        dapur: null,
+        jadwal_hari_ini: { total: 0, terjadwal: 0, dalam_pengiriman: 0, diterima: 0, gagal: 0 },
+        pengiriman_bulan_ini: 0,
+        insiden_bulan_ini: 0,
+        stok_hampir_expired: 0,
+        sekolah_binaan: 0,
+      });
+    }
+
+    const dapurIds = dapurRows.map((d) => d.id);
+    const placeholders = dapurIds.map(() => '?').join(', ');
+
+    const jadwalStatus = await get(
+      `
+        SELECT
+          COUNT(*) as total,
+          SUM(CASE WHEN status = 'terjadwal' THEN 1 ELSE 0 END) as terjadwal,
+          SUM(CASE WHEN status = 'dalam_pengiriman' THEN 1 ELSE 0 END) as dalam_pengiriman,
+          SUM(CASE WHEN status = 'diterima' THEN 1 ELSE 0 END) as diterima,
+          SUM(CASE WHEN status = 'gagal' THEN 1 ELSE 0 END) as gagal
+        FROM jadwal_distribusi
+        WHERE tanggal = ?
+          AND dapur_id IN (${placeholders})
+      `,
+      [today, ...dapurIds]
+    );
+
+    const pengirimanBulanIni = await get(
+      `
+        SELECT COUNT(*) as count
+        FROM pengiriman p
+        JOIN jadwal_distribusi jd ON p.jadwal_id = jd.id
+        WHERE strftime('%Y-%m', jd.tanggal) = strftime('%Y-%m', 'now')
+          AND jd.dapur_id IN (${placeholders})
+      `,
+      dapurIds
+    );
+
+    const insidenBulanIni = await get(
+      `
+        SELECT COUNT(*) as count
+        FROM insiden i
+        WHERE strftime('%Y-%m', i.tanggal) = strftime('%Y-%m', 'now')
+          AND (
+            i.dapur_id IN (${placeholders})
+            OR (
+              i.dapur_id IS NULL
+              AND i.sekolah_id IN (
+                SELECT sekolah_id
+                FROM dapur_sekolah
+                WHERE status = 'aktif'
+                  AND dapur_id IN (${placeholders})
+              )
+            )
+          )
+      `,
+      [...dapurIds, ...dapurIds]
+    );
+
+    const stokExpiredSoon = await get(
+      `
+        SELECT COUNT(*) as count
+        FROM stok_bahan
+        WHERE expired_date <= date('now', '+3 days')
+          AND dapur_id IN (${placeholders})
+      `,
+      dapurIds
+    );
+
+    const sekolahBinaan = await get(
+      `
+        SELECT COUNT(DISTINCT sekolah_id) as count
+        FROM dapur_sekolah
+        WHERE status = 'aktif'
+          AND dapur_id IN (${placeholders})
+      `,
+      dapurIds
+    );
+
+    res.json({
+      dapur: {
+        id: dapurRows[0].id,
+        nama: dapurRows[0].nama,
+        kapasitas_harian: dapurRows[0].kapasitas_harian || 0,
+      },
+      jadwal_hari_ini: {
+        total: jadwalStatus?.total || 0,
+        terjadwal: jadwalStatus?.terjadwal || 0,
+        dalam_pengiriman: jadwalStatus?.dalam_pengiriman || 0,
+        diterima: jadwalStatus?.diterima || 0,
+        gagal: jadwalStatus?.gagal || 0,
+      },
+      pengiriman_bulan_ini: pengirimanBulanIni?.count || 0,
+      insiden_bulan_ini: insidenBulanIni?.count || 0,
+      stok_hampir_expired: stokExpiredSoon?.count || 0,
+      sekolah_binaan: sekolahBinaan?.count || 0,
+    });
+  } catch (error) {
+    console.error('Get supplier stats error:', error);
+    res.status(500).json({ error: 'Terjadi kesalahan server' });
+  }
+});
+
 // Dashboard statistics
 router.get('/stats', authenticateToken, async (req, res) => {
   try {
