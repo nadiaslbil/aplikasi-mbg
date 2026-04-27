@@ -10,10 +10,19 @@ router.get('/', authenticateToken, async (req, res) => {
     
     let query = `
       SELECT jd.*, ds.nama as dapur_nama, s.nama as sekolah_nama, s.alamat as sekolah_alamat,
-             s.latitude as sekolah_latitude, s.longitude as sekolah_longitude
+             s.latitude as sekolah_latitude, s.longitude as sekolah_longitude,
+             COALESCE(pu.nama, du.nama) as kurir_nama
       FROM jadwal_distribusi jd
       JOIN dapur_supplier ds ON jd.dapur_id = ds.id
       JOIN sekolah s ON jd.sekolah_id = s.id
+      LEFT JOIN pengiriman p ON p.jadwal_id = jd.id
+      LEFT JOIN users pu ON p.kurir_id = pu.id
+      LEFT JOIN (
+        SELECT dapur_id, MIN(kurir_id) as kurir_id
+        FROM dapur_kurir
+        GROUP BY dapur_id
+      ) dkm ON dkm.dapur_id = jd.dapur_id
+      LEFT JOIN users du ON dkm.kurir_id = du.id
       WHERE 1=1
     `;
     const params = [];
@@ -54,10 +63,19 @@ router.get('/:id', authenticateToken, async (req, res) => {
     const query = `
       SELECT jd.*, ds.nama as dapur_nama, s.nama as sekolah_nama, s.alamat as sekolah_alamat,
              s.latitude as sekolah_latitude, s.longitude as sekolah_longitude,
-             s.kontak as sekolah_kontak
+             s.kontak as sekolah_kontak,
+             COALESCE(pu.nama, du.nama) as kurir_nama
       FROM jadwal_distribusi jd
       JOIN dapur_supplier ds ON jd.dapur_id = ds.id
       JOIN sekolah s ON jd.sekolah_id = s.id
+      LEFT JOIN pengiriman p ON p.jadwal_id = jd.id
+      LEFT JOIN users pu ON p.kurir_id = pu.id
+      LEFT JOIN (
+        SELECT dapur_id, MIN(kurir_id) as kurir_id
+        FROM dapur_kurir
+        GROUP BY dapur_id
+      ) dkm ON dkm.dapur_id = jd.dapur_id
+      LEFT JOIN users du ON dkm.kurir_id = du.id
       WHERE jd.id = ?
     `;
     

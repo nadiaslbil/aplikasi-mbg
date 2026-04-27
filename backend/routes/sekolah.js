@@ -34,7 +34,38 @@ router.get('/', authenticateToken, async (req, res) => {
     query += ' ORDER BY nama ASC';
 
     const sekolah = await all(query, params);
-    res.json(sekolah);
+
+    if (!sekolah.length) {
+      return res.json(sekolah);
+    }
+
+    const sekolahIds = sekolah.map((s) => s.id);
+    const placeholders = sekolahIds.map(() => '?').join(', ');
+    const dapurRows = await all(
+      `
+        SELECT dsk.sekolah_id, ds.nama as dapur_nama
+        FROM dapur_sekolah dsk
+        JOIN dapur_supplier ds ON dsk.dapur_id = ds.id
+        WHERE dsk.status = 'aktif'
+          AND dsk.sekolah_id IN (${placeholders})
+        ORDER BY ds.nama ASC
+      `,
+      sekolahIds
+    );
+
+    const dapurBySekolah = new Map();
+    for (const row of dapurRows) {
+      const existing = dapurBySekolah.get(row.sekolah_id) || [];
+      existing.push(row.dapur_nama);
+      dapurBySekolah.set(row.sekolah_id, existing);
+    }
+
+    const sekolahWithDapur = sekolah.map((row) => ({
+      ...row,
+      dapur_pembina: (dapurBySekolah.get(row.id) || []).join(', ') || null,
+    }));
+
+    res.json(sekolahWithDapur);
   } catch (error) {
     console.error('Get sekolah error:', error);
     res.status(500).json({ error: 'Terjadi kesalahan server' });
@@ -50,7 +81,22 @@ router.get('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Sekolah tidak ditemukan' });
     }
 
-    res.json(sekolah);
+    const dapurRows = await all(
+      `
+        SELECT ds.nama as dapur_nama
+        FROM dapur_sekolah dsk
+        JOIN dapur_supplier ds ON dsk.dapur_id = ds.id
+        WHERE dsk.status = 'aktif'
+          AND dsk.sekolah_id = ?
+        ORDER BY ds.nama ASC
+      `,
+      [req.params.id]
+    );
+
+    res.json({
+      ...sekolah,
+      dapur_pembina: dapurRows.map((d) => d.dapur_nama).join(', ') || null,
+    });
   } catch (error) {
     res.status(500).json({ error: 'Terjadi kesalahan server' });
   }
