@@ -72,16 +72,34 @@ export default function AssignSekolahPage() {
   const sekolahsArray = Array.isArray(sekolahs) ? sekolahs : [];
 
   useEffect(() => {
+    if (!token) return;
     fetchData();
-  }, []);
+  }, [token]);
 
   const fetchData = async () => {
+    if (!token) return;
     try {
       setLoading(true);
+      const [relResp, dapurResp, sekolahResp] = await Promise.all([
+        fetch(`${API_URL}/dapur-sekolah`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/dapur`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/sekolah`, { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+
+      if (!relResp.ok || !dapurResp.ok || !sekolahResp.ok) {
+        console.error('Fetch error:', relResp.status, dapurResp.status, sekolahResp.status);
+        if ([relResp.status, dapurResp.status, sekolahResp.status].includes(401)) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/login';
+          return;
+        }
+      }
+
       const [relRes, dapurRes, sekolahRes] = await Promise.all([
-        fetch(`${API_URL}/dapur-sekolah`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-        fetch(`${API_URL}/dapur`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-        fetch(`${API_URL}/sekolah`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+        relResp.ok ? relResp.json() : Promise.resolve([]),
+        dapurResp.ok ? dapurResp.json() : Promise.resolve([]),
+        sekolahResp.ok ? sekolahResp.json() : Promise.resolve([]),
       ]);
 
       setRelations(Array.isArray(relRes) ? relRes : []);

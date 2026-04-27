@@ -32,6 +32,7 @@ app.use('/api/insiden', require('../routes/insiden'));
 app.use('/api/users', require('../routes/users'));
 app.use('/api/kurir', require('../routes/kurir'));
 app.use('/api/dapur-kurir', require('../routes/dapur-kurir'));
+app.use('/api/dapur-sekolah', require('../routes/dapur-sekolah'));
 
 app.get('/api/health', (req, res) => {
   res.status(200).json({ 
