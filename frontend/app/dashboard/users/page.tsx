@@ -106,8 +106,17 @@ export default function UsersPage() {
           <Plus size={16} /> Tambah User
         </button>
         <div className="relative flex-1 max-w-xs ml-auto">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
-          <input type="text" placeholder="Cari user..." value={search} onChange={(e) => setSearch(e.target.value)} className="input pl-9" />
+          <Search
+            size={16}
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
+          />
+          <input
+            type="text"
+            placeholder="Cari user..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="input pl-10!"
+          />
         </div>
       </div>
 
