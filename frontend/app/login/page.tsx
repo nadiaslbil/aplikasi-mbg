@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/lib/api';
@@ -15,9 +15,22 @@ interface LoginForm {
 export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, user, isAuthenticated, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const { register, handleSubmit } = useForm<LoginForm>();
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!isAuthenticated || !user) return;
+
+    if (user.role === 'kurir') {
+      router.replace('/dashboard/kurir');
+    } else if (user.role === 'supplier') {
+      router.replace('/dashboard/supplier');
+    } else {
+      router.replace('/dashboard');
+    }
+  }, [authLoading, isAuthenticated, user, router]);
 
   const onSubmit = async (data: LoginForm) => {
     setLoading(true);
