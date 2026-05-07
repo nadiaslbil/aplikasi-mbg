@@ -89,7 +89,7 @@ export default function AssignKurirPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.dapur_id || !formData.kurir_id) {
-      alert('Pilih dapur dan kurir terlebih dahulu');
+      toast.error('Pilih dapur dan kurir terlebih dahulu');
       return;
     }
 
@@ -106,11 +106,11 @@ export default function AssignKurirPage() {
 
       if (!res.ok) {
         const error = await res.json();
-        alert(error.error || 'Gagal menambahkan relasi');
+        toast.error(error.error || 'Gagal menambahkan relasi');
         return;
       }
 
-      alert('✅ Kurir berhasil ditugaskan ke dapur');
+      toast.success('Kurir berhasil ditugaskan ke dapur');
       setShowModal(false);
       setFormData({
         dapur_id: '',
@@ -120,7 +120,7 @@ export default function AssignKurirPage() {
       fetchData();
     } catch (error) {
       console.error('Error saving:', error);
-      alert('Terjadi kesalahan saat menyimpan');
+      toast.error('Terjadi kesalahan saat menyimpan');
     } finally {
       setSaving(false);
     }
@@ -137,15 +137,15 @@ export default function AssignKurirPage() {
 
       if (!res.ok) {
         const error = await res.json();
-        alert(error.error || 'Gagal menghapus relasi');
+        toast.error(error.error || 'Gagal menghapus relasi');
         return;
       }
 
-      alert('✅ Penugasan berhasil dihapus');
+      toast.success('Penugasan berhasil dihapus');
       fetchData();
     } catch (error) {
       console.error('Error deleting:', error);
-      alert('Terjadi kesalahan saat menghapus');
+      toast.error('Terjadi kesalahan saat menghapus');
     }
   };
 
@@ -168,14 +168,14 @@ export default function AssignKurirPage() {
 
       if (!res.ok) {
         const error = await res.json();
-        alert(error.error || 'Gagal update status');
+        toast.error(error.error || 'Gagal update status');
         return;
       }
 
       fetchData();
     } catch (error) {
       console.error('Error updating:', error);
-      alert('Terjadi kesalahan saat update');
+      toast.error('Terjadi kesalahan saat update');
     }
   };
 

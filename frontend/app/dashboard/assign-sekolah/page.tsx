@@ -118,7 +118,7 @@ export default function AssignSekolahPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.dapur_id || !formData.sekolah_id) {
-      alert('Pilih dapur dan sekolah terlebih dahulu');
+      toast.error('Pilih dapur dan sekolah terlebih dahulu');
       return;
     }
 
@@ -138,17 +138,17 @@ export default function AssignSekolahPage() {
 
       if (!res.ok) {
         const error = await res.json();
-        alert(error.error || 'Gagal menambahkan relasi');
+        toast.error(error.error || 'Gagal menambahkan relasi');
         return;
       }
 
-      alert('✅ Sekolah berhasil ditugaskan ke dapur');
+      toast.success('Sekolah berhasil ditugaskan ke dapur');
       setShowModal(false);
       resetForm();
       fetchData();
     } catch (error) {
       console.error('Error saving:', error);
-      alert('Terjadi kesalahan saat menyimpan');
+      toast.error('Terjadi kesalahan saat menyimpan');
     } finally {
       setSaving(false);
     }
@@ -175,15 +175,15 @@ export default function AssignSekolahPage() {
 
       if (!res.ok) {
         const error = await res.json();
-        alert(error.error || 'Gagal menghapus relasi');
+        toast.error(error.error || 'Gagal menghapus relasi');
         return;
       }
 
-      alert('✅ Penugasan berhasil dihapus');
+      toast.success('Penugasan berhasil dihapus');
       fetchData();
     } catch (error) {
       console.error('Error deleting:', error);
-      alert('Terjadi kesalahan saat menghapus');
+      toast.error('Terjadi kesalahan saat menghapus');
     }
   };
 
@@ -206,14 +206,14 @@ export default function AssignSekolahPage() {
 
       if (!res.ok) {
         const error = await res.json();
-        alert(error.error || 'Gagal update status');
+        toast.error(error.error || 'Gagal update status');
         return;
       }
 
       fetchData();
     } catch (error) {
       console.error('Error updating:', error);
-      alert('Terjadi kesalahan saat update');
+      toast.error('Terjadi kesalahan saat update');
     }
   };
 

@@ -249,11 +249,11 @@ export default function KurirPage() {
         await sendLocationOnce(selectedTugas.id);
       }
 
-      alert('Pengiriman berhasil diupdate');
+      toast.success('Pengiriman berhasil diupdate');
       setShowModal(false);
       fetchTugas();
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Gagal update pengiriman');
+      toast.error(error.response?.data?.error || 'Gagal update pengiriman');
     }
   };
 
@@ -267,10 +267,10 @@ export default function KurirPage() {
         latitude: currentLat,
         longitude: currentLng,
       });
-      alert(`Pengiriman ditandai: ${status.replace('_', ' ')}`);
+      toast.success(`Pengiriman ditandai: ${status.replace('_', ' ')}`);
       fetchTugas();
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Gagal update status');
+      toast.error(error.response?.data?.error || 'Gagal update status');
     }
   };
 
@@ -617,4 +617,6 @@ export default function KurirPage() {
       )}
     </AdminLayout>
   );
+}
+;
 }

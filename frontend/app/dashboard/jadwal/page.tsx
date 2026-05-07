@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import AdminLayout from '@/components/AdminLayout';
 import api from '@/lib/api';
+import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { Plus, Edit, Trash2, X as CloseIcon, Search, Calendar, Clock, Truck, Zap, AlertCircle, PlayCircle, Filter, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -164,7 +165,7 @@ export default function JadwalPage() {
       else await api.post('/jadwal', payload);
       fetchAll();
       handleCloseForm();
-    } catch (error: any) { alert(error.response?.data?.error || 'Terjadi kesalahan'); }
+    } catch (error: any) { toast.error(error.response?.data?.error || 'Terjadi kesalahan'); }
   };
 
   const handleEdit = (jadwal: Jadwal) => {
@@ -185,7 +186,7 @@ export default function JadwalPage() {
   const handleDelete = async (id: number) => {
     if (!confirm('Yakin ingin menghapus jadwal ini?')) return;
     try { await api.delete(`/jadwal/${id}`); fetchAll(); }
-    catch (error: any) { alert(error.response?.data?.error || 'Terjadi kesalahan'); }
+    catch (error: any) { toast.error(error.response?.data?.error || 'Terjadi kesalahan'); }
   };
 
   const handleCloseForm = () => {
@@ -208,7 +209,7 @@ export default function JadwalPage() {
       fetchAll(); // Refresh jadwal
     } catch (error: any) {
       const errorMsg = error.response?.data?.error || 'Gagal generate jadwal. Pastikan penugasan sekolah ke dapur dan kurir ke dapur sudah dibuat.';
-      alert(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setGenerating(false);
     }
@@ -231,9 +232,9 @@ export default function JadwalPage() {
 
       await api.post('/pengiriman', { jadwal_id: jadwalId, kurir_id: finalKurirId });
       fetchAll();
-      alert('✅ Pengiriman berhasil dimulai! Status berubah menjadi "Dalam Pengiriman"');
+      toast.success('Pengiriman berhasil dimulai! Status berubah menjadi "Dalam Pengiriman"');
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Gagal mulai pengiriman');
+      toast.error(error.response?.data?.error || 'Gagal mulai pengiriman');
     } finally {
       setStartingDelivery(null);
     }

@@ -1,9 +1,9 @@
 # 📋 Analisis Kelemahan Aplikasi MBG Distribution System
 
-> **Tanggal Analisis Terakhir:** 27 April 2026  
+> **Tanggal Analisis Terakhir:** 7 Mei 2026  
 > **Total Item:** 20  
-> **Fixed:** 6/20 (30%)  
-> **Pending:** 14/20 (70%)  
+> **Fixed:** 8/20 (40%)  
+> **Pending:** 12/20 (60%)  
 
 ---
 
@@ -12,13 +12,13 @@
 | Kategori | Fixed | Pending | Completion |
 |----------|-------|---------|------------|
 | **KRITIS** (High) | 4/9 | 5 | 44% |
-| **PENTING** (Medium) | 1/5 | 4 | 20% |
-| **REKOMENDASI** (Low) | 1/6 | 5 | 17% |
-| **TOTAL** | **6/20** | **14** | **30%** |
+| **PENTING** (Medium) | 2/5 | 3 | 40% |
+| **REKOMENDASI** (Low) | 2/6 | 4 | 33% |
+| **TOTAL** | **8/20** | **12** | **40%** |
 
 ---
 
-## ✅ SUDAH DIPERBAIKI (6/20)
+## ✅ SUDAH DIPERBAIKI (8/20)
 
 ### 1. ✅ Relasi User Supplier ↔ Data Dapur
 - **Status:** FIXED
@@ -32,22 +32,30 @@
 - **Status:** FIXED
 - **Implementasi:** Server-side search dengan parameterized LIKE query pada endpoint utama.
 
-### 4. ✅ Implementasi RBAC Konsisten (NEWLY FIXED)
+### 4. ✅ Implementasi RBAC Konsisten
 - **Status:** FIXED
 - **Bukti:** Semua route di `backend/routes/` sekarang menggunakan middleware `requireRole` dan matriks `permissions`.
 - **Tambahan:** Ditambahkan pengecekan *Ownership* (kepemilikan) untuk Supplier dan Kurir.
 
-### 5. ✅ Endpoint Seed Publik Dihapus (NEWLY FIXED)
+### 5. ✅ Endpoint Seed Publik Dihapus
 - **Status:** FIXED
 - **Bukti:** Endpoint `GET /api/seed` telah dihapus dari `backend/api/index.js`.
 
-### 8. ✅ Endpoint Delete Insiden (NEWLY FIXED)
+### 8. ✅ Endpoint Delete Insiden
 - **Status:** FIXED
 - **Bukti:** Endpoint `DELETE /api/insiden/:id` telah ditambahkan di `backend/routes/insiden.js`.
 
+### 11. ✅ Implementasi Pagination
+- **Status:** FIXED
+- **Implementasi:** Server-side pagination (`LIMIT`, `OFFSET`, dan `totalCount`) telah diterapkan pada endpoint utama (`sekolah`, `pengiriman`, `jadwal`). Frontend telah diperbarui untuk mendukung navigasi halaman dan pencarian di sisi server.
+
+### 17. ✅ Implementasi Notifikasi Modern (Sonner)
+- **Status:** FIXED
+- **Implementasi:** Seluruh penggunaan `alert()` native telah diganti dengan library **Sonner**. Aplikasi kini menggunakan sistem "Toast" yang non-blocking, mendukung tema warna (success/error), dan memiliki UI yang konsisten dengan tema aplikasi.
+
 ---
 
-## ❌ BELUM DIPERBAIKI (14/20)
+## ❌ BELUM DIPERBAIKI (12/20)
 
 ### 🔴 KRITIS (High Priority)
 
@@ -69,9 +77,6 @@
 
 ### 🟡 PENTING (Medium Priority)
 
-#### 11. ❌ Tanpa Pagination
-- **Masalah:** `SELECT * FROM table` tanpa limit. Aplikasi akan crash saat data mencapai ribuan.
-
 #### 12. ❌ Hard Delete (Tanpa Soft Delete)
 - **Masalah:** Sekali hapus, data hilang selamanya.
 
@@ -91,9 +96,6 @@
 #### 16. ❌ Loading State Navigasi Minim
 - **Masalah:** Klik menu tidak ada progress bar atau spinner global.
 
-#### 17. ❌ Masih Menggunakan alert() Native
-- **Masalah:** UI/UX terganggu oleh pop-up browser.
-
 #### 18. ❌ Tidak Ada Export Data (Excel/PDF)
 - **Masalah:** User tidak bisa menarik laporan untuk keperluan offline.
 
@@ -101,7 +103,7 @@
 - **Masalah:** Dashboard hanya menampilkan angka mentah.
 
 #### 20. ❌ Inkosistensi Entry Point Backend
-- **Masalah:** Adanya `server.js` dan `api/index.js` yang tumpang tindih fungsinya.
+- **Masalah:** Adanya `server.js` dan `api/index.js` yang tumpang tidih fungsinya.
 
 ---
 
@@ -109,7 +111,7 @@
 
 1. **URGENT:** Implementasi validasi input (Zod/Joi) untuk mencegah data corrupt.
 2. **SECURITY:** Perkuat Password Policy dan tambahkan validasi kompleksitas.
-3. **STABILITY:** Tambahkan Pagination dan perbaiki `transformQuery` di `database.js`.
+3. **STABILITY:** Perbaiki `transformQuery` di `database.js` atau gunakan Query Builder.
 
 ---
 **© 2026 - MBG Distribution System - Terakhir diperbarui oleh Gemini CLI**

@@ -8,8 +8,11 @@ const { requireRole, permissions } = require('../middleware/rbac');
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const { kecamatan, kabupaten, status, search } = req.query;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
     
-    let query = 'SELECT * FROM sekolah WHERE 1=1';
+    let baseQuery = 'FROM sekolah WHERE 1=1';
     const params = [];
 
     if (req.user?.role === 'supplier' || req.user?.role === 'kurir') {
@@ -26,11 +29,17 @@ router.get('/', authenticateToken, async (req, res) => {
       }
 
       if (accessibleDapurIds.length === 0) {
-        return res.json([]);
+        return res.json({
+          data: [],
+          total: 0,
+          page,
+          limit,
+          totalPages: 0
+        });
       }
 
       const placeholders = accessibleDapurIds.map(() => '?').join(', ');
-      query += `
+      baseQuery += `
         AND EXISTS (
           SELECT 1
           FROM dapur_sekolah dsk
@@ -43,31 +52,41 @@ router.get('/', authenticateToken, async (req, res) => {
     }
 
     if (kecamatan) {
-      query += ' AND kecamatan = ?';
+      baseQuery += ' AND kecamatan = ?';
       params.push(kecamatan);
     }
 
     if (kabupaten) {
-      query += ' AND kabupaten = ?';
+      baseQuery += ' AND kabupaten = ?';
       params.push(kabupaten);
     }
 
     if (status) {
-      query += ' AND status = ?';
+      baseQuery += ' AND status = ?';
       params.push(status);
     }
 
     if (search) {
-      query += ' AND (nama LIKE ? OR alamat LIKE ?)';
-      params.push(`%${search}%`, `%${search}%`);
+      baseQuery += ' AND (nama LIKE ? OR alamat LIKE ? OR kecamatan LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
-    query += ' ORDER BY nama ASC';
+    // Get total count for pagination
+    const countResult = await get(`SELECT COUNT(*) as total ${baseQuery}`, params);
+    const total = countResult.total;
 
-    const sekolah = await all(query, params);
+    // Get paginated data
+    let query = `SELECT * ${baseQuery} ORDER BY nama ASC LIMIT ? OFFSET ?`;
+    const sekolah = await all(query, [...params, limit, offset]);
 
     if (!sekolah.length) {
-      return res.json(sekolah);
+      return res.json({
+        data: [],
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      });
     }
 
     const sekolahIds = sekolah.map((s) => s.id);
@@ -96,7 +115,13 @@ router.get('/', authenticateToken, async (req, res) => {
       dapur_pembina: (dapurBySekolah.get(row.id) || []).join(', ') || null,
     }));
 
-    res.json(sekolahWithDapur);
+    res.json({
+      data: sekolahWithDapur,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    });
   } catch (error) {
     console.error('Get sekolah error:', error);
     res.status(500).json({ error: 'Terjadi kesalahan server' });

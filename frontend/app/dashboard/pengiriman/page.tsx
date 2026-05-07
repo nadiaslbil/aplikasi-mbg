@@ -108,11 +108,11 @@ export default function PengirimanPage() {
         bukti_foto: updateForm.bukti_foto,
       });
       
-      alert('Pengiriman berhasil diupdate');
+      toast.success('Pengiriman berhasil diupdate');
       setShowUpdateModal(false);
       fetchPengiriman();
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Gagal update pengiriman');
+      toast.error(error.response?.data?.error || 'Gagal update pengiriman');
     }
   };
 
@@ -283,5 +283,8 @@ export default function PengirimanPage() {
         </div>
       )}
     </AdminLayout>
+  );
+}
+minLayout>
   );
 }

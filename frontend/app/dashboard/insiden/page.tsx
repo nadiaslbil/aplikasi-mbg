@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import AdminLayout from '@/components/AdminLayout';
 import api from '@/lib/api';
+import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { Plus, X as CloseIcon, AlertTriangle, Calendar, School, Store, Edit, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -109,7 +110,7 @@ export default function InsidenPage() {
       await api.post('/insiden', data);
       fetchAll();
       handleCloseForm();
-    } catch (error: any) { alert(error.response?.data?.error || 'Terjadi kesalahan'); }
+    } catch (error: any) { toast.error(error.response?.data?.error || 'Terjadi kesalahan'); }
   };
 
   const handleUpdateStatus = (insiden: Insiden) => {
@@ -122,11 +123,11 @@ export default function InsidenPage() {
     if (!selectedInsiden) return;
     try {
       await api.put(`/insiden/${selectedInsiden.id}`, { status: updateStatus });
-      alert('Status insiden berhasil diupdate');
+      toast.success('Status insiden berhasil diupdate');
       setShowUpdateModal(false);
       fetchAll();
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Gagal update status');
+      toast.error(error.response?.data?.error || 'Gagal update status');
     }
   };
 

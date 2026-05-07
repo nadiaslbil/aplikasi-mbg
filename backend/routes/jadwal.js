@@ -8,11 +8,11 @@ const { requireRole, permissions } = require('../middleware/rbac');
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const { tanggal, status, dapur_id, sekolah_id } = req.query;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
     
-    let query = `
-      SELECT jd.*, ds.nama as dapur_nama, s.nama as sekolah_nama, s.alamat as sekolah_alamat,
-             s.latitude as sekolah_latitude, s.longitude as sekolah_longitude,
-             COALESCE(pu.nama, du.nama) as kurir_nama
+    let baseQuery = `
       FROM jadwal_distribusi jd
       JOIN dapur_supplier ds ON jd.dapur_id = ds.id
       JOIN sekolah s ON jd.sekolah_id = s.id
@@ -42,38 +42,61 @@ router.get('/', authenticateToken, async (req, res) => {
       }
 
       if (accessibleDapurIds.length === 0) {
-        return res.json([]);
+        return res.json({
+          data: [],
+          total: 0,
+          page,
+          limit,
+          totalPages: 0
+        });
       }
 
       const placeholders = accessibleDapurIds.map(() => '?').join(', ');
-      query += ` AND jd.dapur_id IN (${placeholders})`;
+      baseQuery += ` AND jd.dapur_id IN (${placeholders})`;
       params.push(...accessibleDapurIds);
     }
 
     if (tanggal) {
-      query += ' AND jd.tanggal = ?';
+      baseQuery += ' AND jd.tanggal = ?';
       params.push(tanggal);
     }
 
     if (status) {
-      query += ' AND jd.status = ?';
+      baseQuery += ' AND jd.status = ?';
       params.push(status);
     }
 
     if (dapur_id) {
-      query += ' AND jd.dapur_id = ?';
+      baseQuery += ' AND jd.dapur_id = ?';
       params.push(dapur_id);
     }
 
     if (sekolah_id) {
-      query += ' AND jd.sekolah_id = ?';
+      baseQuery += ' AND jd.sekolah_id = ?';
       params.push(sekolah_id);
     }
 
-    query += ' ORDER BY jd.tanggal DESC, jd.waktu_kirim ASC';
+    // Get total count
+    const countResult = await get(`SELECT COUNT(*) as total ${baseQuery}`, params);
+    const total = countResult.total;
 
-    const jadwal = await all(query, params);
-    res.json(jadwal);
+    let query = `
+      SELECT jd.*, ds.nama as dapur_nama, s.nama as sekolah_nama, s.alamat as sekolah_alamat,
+             s.latitude as sekolah_latitude, s.longitude as sekolah_longitude,
+             COALESCE(pu.nama, du.nama) as kurir_nama
+      ${baseQuery}
+      ORDER BY jd.tanggal DESC, jd.waktu_kirim ASC
+      LIMIT ? OFFSET ?
+    `;
+
+    const jadwal = await all(query, [...params, limit, offset]);
+    res.json({
+      data: jadwal,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    });
   } catch (error) {
     console.error('Get jadwal error:', error);
     res.status(500).json({ error: 'Terjadi kesalahan server' });

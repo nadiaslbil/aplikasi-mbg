@@ -8,10 +8,11 @@ const { requireRole, permissions } = require('../middleware/rbac');
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const { status, jadwal_id } = req.query;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
     
-    let query = `
-      SELECT p.*, jd.tanggal, jd.waktu_kirim,
-             ds.nama as dapur_nama, s.nama as sekolah_nama
+    let baseQuery = `
       FROM pengiriman p
       JOIN jadwal_distribusi jd ON p.jadwal_id = jd.id
       JOIN dapur_supplier ds ON jd.dapur_id = ds.id
@@ -21,12 +22,12 @@ router.get('/', authenticateToken, async (req, res) => {
     const params = [];
 
     if (status) {
-      query += ' AND p.status = ?';
+      baseQuery += ' AND p.status = ?';
       params.push(status);
     }
 
     if (jadwal_id) {
-      query += ' AND p.jadwal_id = ?';
+      baseQuery += ' AND p.jadwal_id = ?';
       params.push(jadwal_id);
     }
 
@@ -44,24 +45,46 @@ router.get('/', authenticateToken, async (req, res) => {
       }
 
       if (accessibleDapurIds.length === 0) {
-        return res.json([]);
+        return res.json({
+          data: [],
+          total: 0,
+          page,
+          limit,
+          totalPages: 0
+        });
       }
 
       const placeholders = accessibleDapurIds.map(() => '?').join(', ');
-      query += ` AND jd.dapur_id IN (${placeholders})`;
+      baseQuery += ` AND jd.dapur_id IN (${placeholders})`;
       params.push(...accessibleDapurIds);
 
       // Kurir tetap dibatasi ke pengiriman miliknya di dalam dapur ter-relasi
       if (req.user.role === 'kurir') {
-        query += ' AND p.kurir_id = ?';
+        baseQuery += ' AND p.kurir_id = ?';
         params.push(req.user.id);
       }
     }
 
-    query += ' ORDER BY p.created_at DESC';
+    // Get total count
+    const countResult = await get(`SELECT COUNT(*) as total ${baseQuery}`, params);
+    const total = countResult.total;
 
-    const pengiriman = await all(query, params);
-    res.json(pengiriman);
+    let query = `
+      SELECT p.*, jd.tanggal, jd.waktu_kirim,
+             ds.nama as dapur_nama, s.nama as sekolah_nama
+      ${baseQuery}
+      ORDER BY p.created_at DESC
+      LIMIT ? OFFSET ?
+    `;
+
+    const pengiriman = await all(query, [...params, limit, offset]);
+    res.json({
+      data: pengiriman,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    });
   } catch (error) {
     console.error('Get pengiriman error:', error);
     res.status(500).json({ error: 'Terjadi kesalahan server' });

@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import AdminLayout from '@/components/AdminLayout';
 import api from '@/lib/api';
+import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import {
   Plus,
@@ -81,7 +82,7 @@ export default function UsersPage() {
       }
       fetchUsers();
       handleCloseForm();
-    } catch (error: any) { alert(error.response?.data?.error || 'Terjadi kesalahan'); }
+    } catch (error: any) { toast.error(error.response?.data?.error || 'Terjadi kesalahan'); }
   };
 
   const handleEdit = (u: User) => {
@@ -93,7 +94,7 @@ export default function UsersPage() {
   const handleDelete = async (id: number) => {
     if (!confirm('Yakin ingin menghapus user ini?')) return;
     try { await api.delete(`/users/${id}`); fetchUsers(); }
-    catch (error: any) { alert(error.response?.data?.error || 'Terjadi kesalahan'); }
+    catch (error: any) { toast.error(error.response?.data?.error || 'Terjadi kesalahan'); }
   };
 
   const handleCloseForm = () => { setShowForm(false); setEditingId(null); reset(); };

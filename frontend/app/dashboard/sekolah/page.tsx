@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import AdminLayout from '@/components/AdminLayout';
 import api from '@/lib/api';
+import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { usePermissions } from '@/hooks/usePermissions';
 import {
@@ -54,6 +55,9 @@ export default function SekolahPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
 
   // Check if user is kurir or supplier (for info banner)
   const isKurir = user?.role === 'kurir';
@@ -69,12 +73,21 @@ export default function SekolahPage() {
       return;
     }
     fetchSekolah();
-  }, [user, authLoading]);
+  }, [user, authLoading, page, search]);
 
   const fetchSekolah = async () => {
     try {
-      const response = await api.get('/sekolah');
-      setSekolahList(response.data);
+      setLoading(true);
+      const response = await api.get('/sekolah', {
+        params: {
+          page,
+          limit: 10,
+          search: search || undefined
+        }
+      });
+      setSekolahList(response.data.data);
+      setTotalPages(response.data.totalPages);
+      setTotal(response.data.total);
     } catch (error) {
       console.error('Error fetching sekolah:', error);
     } finally {
@@ -92,7 +105,7 @@ export default function SekolahPage() {
       fetchSekolah();
       handleCloseForm();
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Terjadi kesalahan');
+      toast.error(error.response?.data?.error || 'Terjadi kesalahan');
     }
   };
 
@@ -117,7 +130,7 @@ export default function SekolahPage() {
       await api.delete(`/sekolah/${id}`);
       fetchSekolah();
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Terjadi kesalahan');
+      toast.error(error.response?.data?.error || 'Terjadi kesalahan');
     }
   };
 
@@ -126,12 +139,6 @@ export default function SekolahPage() {
     setEditingId(null);
     reset();
   };
-
-  const filteredSekolah = sekolahList.filter((s) =>
-    s.nama.toLowerCase().includes(search.toLowerCase()) ||
-    s.alamat.toLowerCase().includes(search.toLowerCase()) ||
-    s.kecamatan.toLowerCase().includes(search.toLowerCase())
-  );
 
   return (
     <AdminLayout
@@ -180,7 +187,10 @@ export default function SekolahPage() {
             type="text"
             placeholder="Cari sekolah..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1); // Reset to page 1 on search
+            }}
             className="input pl-10!"
           />
         </div>
@@ -271,15 +281,13 @@ export default function SekolahPage() {
               {loading ? (
                 <tr>
                   <td colSpan={8} className="text-center py-12">
-                    <div className="loading-spinner">
-                      <div className="loading-spinner-inner">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                        <p className="text-sm text-zinc-500">Memuat data...</p>
-                      </div>
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                      <p className="text-sm text-zinc-500">Memuat data...</p>
                     </div>
                   </td>
                 </tr>
-              ) : filteredSekolah.length === 0 ? (
+              ) : sekolahList.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="text-center py-12">
                     <div className="empty-state">
@@ -292,7 +300,7 @@ export default function SekolahPage() {
                   </td>
                 </tr>
               ) : (
-                filteredSekolah.map((sekolah) => (
+                sekolahList.map((sekolah) => (
                   <tr key={sekolah.id}>
                     <td className="font-medium text-zinc-900">{sekolah.nama}</td>
                     <td>{sekolah.kecamatan}</td>
@@ -339,6 +347,46 @@ export default function SekolahPage() {
           </table>
         </div>
       </div>
+
+      {/* Pagination Controls */}
+      {!loading && sekolahList.length > 0 && (
+        <div className="flex items-center justify-between mt-4 px-1">
+          <div className="text-sm text-zinc-500">
+            Menampilkan <span className="font-medium text-zinc-700">{sekolahList.length}</span> dari <span className="font-medium text-zinc-700">{total}</span> data
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="px-3 py-1 border border-zinc-200 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-50 transition-colors"
+            >
+              Sebelumnya
+            </button>
+            <div className="flex items-center gap-1">
+              {[...Array(totalPages)].map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setPage(i + 1)}
+                  className={`w-8 h-8 flex items-center justify-center rounded text-sm transition-colors ${
+                    page === i + 1
+                      ? 'bg-blue-600 text-white'
+                      : 'hover:bg-zinc-100 text-zinc-600'
+                  }`}
+                >
+                  {i + 1}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="px-3 py-1 border border-zinc-200 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-50 transition-colors"
+            >
+              Selanjutnya
+            </button>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 }
