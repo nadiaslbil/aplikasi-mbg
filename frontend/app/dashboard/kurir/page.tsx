@@ -123,19 +123,21 @@ export default function KurirPage() {
 
   const fetchTugas = async () => {
     try {
-      const params: Record<string, string> = {};
+      const params: Record<string, any> = {};
       if (filterStatus) params.status = filterStatus;
+      // Fetch all for kurir (using a large limit for now as kurir usually has few tasks)
+      params.limit = 100;
       
       // Backend sudah filter otomatis berdasarkan kurir_id yang login
       const response = await api.get('/pengiriman', { params });
-      setTugasList(response.data);
+      setTugasList(response.data.data);
 
       // Fetch info dapur dan sekolah yang terkait dengan kurir ini
       if (user?.id) {
         try {
           // Get dapur that this kurir is assigned to
           const dapurKurirRes = await api.get('/dapur-kurir', { params: { kurir_id: user.id } });
-          if (dapurKurirRes.data.length > 0) {
+          if (Array.isArray(dapurKurirRes.data) && dapurKurirRes.data.length > 0) {
             const firstDapur = dapurKurirRes.data[0];
             setDapurInfo({ id: firstDapur.dapur_id, nama: firstDapur.dapur_nama });
 
