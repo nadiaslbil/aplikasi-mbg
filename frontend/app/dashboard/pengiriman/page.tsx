@@ -285,6 +285,3 @@ export default function PengirimanPage() {
     </AdminLayout>
   );
 }
-minLayout>
-  );
-}
