@@ -79,11 +79,23 @@ export default function PengirimanPage() {
     fetchPengiriman();
   }, [user, authLoading, filterStatus]);
 
+  const normalizePengirimanData = (payload: unknown): Pengiriman[] => {
+    if (Array.isArray(payload)) return payload as Pengiriman[];
+    if (payload && typeof payload === 'object') {
+      const record = payload as Record<string, unknown>;
+      if (Array.isArray(record.data)) return record.data as Pengiriman[];
+      if (Array.isArray(record.items)) return record.items as Pengiriman[];
+      if (Array.isArray(record.results)) return record.results as Pengiriman[];
+    }
+    return [];
+  };
+
   const fetchPengiriman = async () => {
     try {
       const params = filterStatus ? { status: filterStatus } : {};
       const response = await api.get('/pengiriman', { params });
-      setPengirimanList(response.data);
+      const normalizedData = normalizePengirimanData(response.data);
+      setPengirimanList(normalizedData);
     } catch (error) { console.error('Error:', error); }
     finally { setLoading(false); }
   };
@@ -168,7 +180,7 @@ export default function PengirimanPage() {
             <tbody>
               {loading ? (
                 <tr><td colSpan={8} className="text-center py-12"><div className="loading-spinner"><div className="loading-spinner-inner"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div><p className="text-sm text-zinc-500">Memuat data...</p></div></div></td></tr>
-              ) : pengirimanList.length === 0 ? (
+              ) : !Array.isArray(pengirimanList) || pengirimanList.length === 0 ? (
                 <tr><td colSpan={8} className="text-center py-12"><div className="empty-state"><div className="empty-state-icon"><Truck size={24} /></div><p className="empty-state-title">Tidak ada pengiriman</p><p className="empty-state-text">Belum ada data pengiriman untuk filter yang dipilih</p></div></td></tr>
               ) : (
                 pengirimanList.map((p) => {
