@@ -89,8 +89,10 @@ export default function StokPage() {
     try {
       if (editingId) {
         await api.put(`/stok/${editingId}`, data);
+        toast.success('Data stok berhasil diupdate');
       } else {
         await api.post('/stok', data);
+        toast.success('Data stok berhasil ditambahkan');
       }
       fetchAll();
       handleCloseForm();
@@ -111,7 +113,11 @@ export default function StokPage() {
 
   const handleDelete = async (id: number) => {
     if (!confirm('Yakin ingin menghapus stok ini?')) return;
-    try { await api.delete(`/stok/${id}`); fetchAll(); }
+    try {
+      await api.delete(`/stok/${id}`);
+      toast.success('Data stok berhasil dihapus');
+      fetchAll();
+    }
     catch (error: any) { toast.error(error.response?.data?.error || 'Terjadi kesalahan'); }
   };
 

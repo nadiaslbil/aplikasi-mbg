@@ -173,6 +173,7 @@ export default function AssignKurirPage() {
         return;
       }
 
+      toast.success(`Status penugasan kurir ${newStatus === 'aktif' ? 'diaktifkan' : 'dinonaktifkan'}`);
       fetchData();
     } catch (error) {
       console.error('Error updating:', error);

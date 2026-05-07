@@ -77,8 +77,10 @@ export default function UsersPage() {
     try {
       if (editingId) {
         await api.put(`/users/${editingId}`, data);
+        toast.success('Data user berhasil diupdate');
       } else {
         await api.post('/users', data);
+        toast.success('Data user berhasil ditambahkan');
       }
       fetchUsers();
       handleCloseForm();
@@ -93,7 +95,11 @@ export default function UsersPage() {
 
   const handleDelete = async (id: number) => {
     if (!confirm('Yakin ingin menghapus user ini?')) return;
-    try { await api.delete(`/users/${id}`); fetchUsers(); }
+    try {
+      await api.delete(`/users/${id}`);
+      toast.success('Data user berhasil dihapus');
+      fetchUsers();
+    }
     catch (error: any) { toast.error(error.response?.data?.error || 'Terjadi kesalahan'); }
   };
 

@@ -108,6 +108,7 @@ export default function InsidenPage() {
   const onSubmit = async (data: InsidenForm) => {
     try {
       await api.post('/insiden', data);
+      toast.success('Laporan insiden berhasil dibuat');
       fetchAll();
       handleCloseForm();
     } catch (error: any) { toast.error(error.response?.data?.error || 'Terjadi kesalahan'); }

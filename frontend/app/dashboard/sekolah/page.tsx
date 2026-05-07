@@ -99,8 +99,10 @@ export default function SekolahPage() {
     try {
       if (editingId) {
         await api.put(`/sekolah/${editingId}`, data);
+        toast.success('Data sekolah berhasil diupdate');
       } else {
         await api.post('/sekolah', data);
+        toast.success('Data sekolah berhasil ditambahkan');
       }
       fetchSekolah();
       handleCloseForm();
@@ -128,6 +130,7 @@ export default function SekolahPage() {
     if (!confirm('Yakin ingin menghapus sekolah ini?')) return;
     try {
       await api.delete(`/sekolah/${id}`);
+      toast.success('Data sekolah berhasil dihapus');
       fetchSekolah();
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Terjadi kesalahan');

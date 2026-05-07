@@ -211,6 +211,7 @@ export default function AssignSekolahPage() {
         return;
       }
 
+      toast.success(`Status penugasan sekolah ${newStatus === 'aktif' ? 'diaktifkan' : 'dinonaktifkan'}`);
       fetchData();
     } catch (error) {
       console.error('Error updating:', error);
