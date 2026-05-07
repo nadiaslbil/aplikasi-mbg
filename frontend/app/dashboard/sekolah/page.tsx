@@ -144,6 +144,21 @@ export default function SekolahPage() {
     reset();
   };
 
+  const getVisiblePages = () => {
+    const maxVisible = 5;
+    if (totalPages <= maxVisible) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    const start = Math.max(1, page - 2);
+    const end = Math.min(totalPages, start + maxVisible - 1);
+    const adjustedStart = Math.max(1, end - maxVisible + 1);
+
+    return Array.from({ length: end - adjustedStart + 1 }, (_, i) => adjustedStart + i);
+  };
+
+  const visiblePages = getVisiblePages();
+
   return (
     <AdminLayout
       currentPage="/dashboard/sekolah"
@@ -354,39 +369,61 @@ export default function SekolahPage() {
 
       {/* Pagination Controls */}
       {!loading && sekolahList.length > 0 && (
-        <div className="flex items-center justify-between mt-4 px-1">
-          <div className="text-sm text-zinc-500">
+        <div className="mt-4 px-1 space-y-3 sm:space-y-0 sm:flex sm:items-center sm:justify-between">
+          <div className="text-xs sm:text-sm text-zinc-500">
             Menampilkan <span className="font-medium text-zinc-700">{sekolahList.length}</span> dari <span className="font-medium text-zinc-700">{total}</span> data
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between sm:justify-end gap-2">
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-3 py-1 border border-zinc-200 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-50 transition-colors"
+              className="px-2.5 py-1.5 sm:px-3 sm:py-1 border border-zinc-200 rounded text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-50 transition-colors"
             >
-              Sebelumnya
+              Prev
             </button>
-            <div className="flex items-center gap-1">
-              {[...Array(totalPages)].map((_, i) => (
+            <div className="flex items-center gap-1 overflow-x-auto max-w-[190px] sm:max-w-none">
+              {visiblePages[0] > 1 && (
+                <>
+                  <button
+                    onClick={() => setPage(1)}
+                    className="w-8 h-8 flex items-center justify-center rounded text-sm hover:bg-zinc-100 text-zinc-600 transition-colors"
+                  >
+                    1
+                  </button>
+                  {visiblePages[0] > 2 && <span className="text-zinc-400 px-0.5">...</span>}
+                </>
+              )}
+              {visiblePages.map((pageNum) => (
                 <button
-                  key={i}
-                  onClick={() => setPage(i + 1)}
+                  key={pageNum}
+                  onClick={() => setPage(pageNum)}
                   className={`w-8 h-8 flex items-center justify-center rounded text-sm transition-colors ${
-                    page === i + 1
+                    page === pageNum
                       ? 'bg-blue-600 text-white'
                       : 'hover:bg-zinc-100 text-zinc-600'
                   }`}
                 >
-                  {i + 1}
+                  {pageNum}
                 </button>
               ))}
+              {visiblePages[visiblePages.length - 1] < totalPages && (
+                <>
+                  {visiblePages[visiblePages.length - 1] < totalPages - 1 && <span className="text-zinc-400 px-0.5">...</span>}
+                  <button
+                    onClick={() => setPage(totalPages)}
+                    className="w-8 h-8 flex items-center justify-center rounded text-sm hover:bg-zinc-100 text-zinc-600 transition-colors"
+                  >
+                    {totalPages}
+                  </button>
+                </>
+              )}
             </div>
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="px-3 py-1 border border-zinc-200 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-50 transition-colors"
+              className="px-2.5 py-1.5 sm:px-3 sm:py-1 border border-zinc-200 rounded text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-50 transition-colors"
             >
-              Selanjutnya
+              Next
             </button>
           </div>
         </div>
