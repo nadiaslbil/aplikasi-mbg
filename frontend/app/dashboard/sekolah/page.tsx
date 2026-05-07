@@ -58,6 +58,7 @@ export default function SekolahPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [deleteTarget, setDeleteTarget] = useState<Sekolah | null>(null);
 
   // Check if user is kurir or supplier (for info banner)
   const isKurir = user?.role === 'kurir';
@@ -127,11 +128,11 @@ export default function SekolahPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Yakin ingin menghapus sekolah ini?')) return;
     try {
       await api.delete(`/sekolah/${id}`);
       toast.success('Data sekolah berhasil dihapus');
       fetchSekolah();
+      setDeleteTarget(null);
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Terjadi kesalahan');
     }
@@ -337,7 +338,7 @@ export default function SekolahPage() {
                           </button>
                         )}
                         {canDeleteSekolah && (
-                          <button onClick={() => handleDelete(sekolah.id)} className="btn-icon-danger" title="Hapus">
+                          <button onClick={() => setDeleteTarget(sekolah)} className="btn-icon-danger" title="Hapus">
                             <Trash2 size={16} />
                           </button>
                         )}
@@ -387,6 +388,35 @@ export default function SekolahPage() {
             >
               Selanjutnya
             </button>
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[2000] flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full relative z-[2100]">
+            <div className="px-6 py-4 border-b border-zinc-200">
+              <h2 className="text-lg font-semibold text-zinc-900">Konfirmasi Hapus</h2>
+              <p className="text-sm text-zinc-500 mt-1">
+                Hapus data sekolah <span className="font-medium text-zinc-700">{deleteTarget.nama}</span>?
+              </p>
+            </div>
+            <div className="px-6 py-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                className="btn-secondary"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDelete(deleteTarget.id)}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-medium transition-colors"
+              >
+                Hapus
+              </button>
+            </div>
           </div>
         </div>
       )}
