@@ -7,7 +7,7 @@ import AdminLayout from '@/components/AdminLayout';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
-import { Plus, Edit, Trash2, X as CloseIcon, Search, Store } from 'lucide-react';
+import { Plus, Edit, Trash2, X as CloseIcon, Search, Store, School, MapPin } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
 
 interface Dapur {
@@ -261,7 +261,14 @@ export default function DapurPage() {
                         {dapur.sekolahList && dapur.sekolahList.length > 0 ? (
                           dapur.sekolahList.map((s) => (
                             <div key={s.id} className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
-                              🏫 {s.nama} <span className="text-blue-500">• {s.kecamatan}</span>
+                              <span className="flex items-center gap-1.5">
+                                <School size={12} className="shrink-0" />
+                                <span className="font-medium">{s.nama}</span>
+                                <span className="text-blue-500 flex items-center gap-1">
+                                  <MapPin size={10} className="shrink-0" />
+                                  {s.kecamatan}
+                                </span>
+                              </span>
                             </div>
                           ))
                         ) : (
