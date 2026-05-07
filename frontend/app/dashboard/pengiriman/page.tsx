@@ -139,7 +139,6 @@ export default function PengirimanPage() {
               key={opt.value}
               onClick={() => {
                 setFilterStatus(opt.value);
-                setPage(1);
               }}
               className={`filter-btn ${isActive ? 'filter-btn-active' : ''}`}
             >
@@ -249,59 +248,6 @@ export default function PengirimanPage() {
                   kurirNama={selectedPengiriman.kurir_nama}
                   sekolahNama={selectedPengiriman.sekolah_nama}
                   currentStatus={updateForm.status}
-                  onUpdate={fetchPengiriman}
-                />
-              )}
-
-              <PengirimanUpdateForm
-                status={updateForm.status}
-                catatan={updateForm.catatan}
-                foto={updateForm.bukti_foto}
-                onStatusChange={(value) => setUpdateForm((prev) => ({ ...prev, status: value }))}
-                onCatatanChange={(value) => setUpdateForm((prev) => ({ ...prev, catatan: value }))}
-                onFotoUpload={handleFotoUpload}
-                onCancel={() => setShowUpdateModal(false)}
-              />
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* View Foto Modal */}
-      {viewFoto && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[2000] flex items-center justify-center p-4 animate-fadeIn" onClick={() => setViewFoto(null)}>
-          <div className="relative max-w-4xl w-full z-[2100]">
-            <button
-              onClick={() => setViewFoto(null)}
-              className="absolute -top-10 right-0 text-white hover:text-gray-300 flex items-center gap-2"
-            >
-              <X size={20} />
-              <span className="text-sm">Tutup</span>
-            </button>
-            <img
-              src={viewFoto}
-              alt="Bukti Pengiriman"
-              className="w-full rounded-lg shadow-2xl"
-            />
-          </div>
-        </div>
-      )}
-    </AdminLayout>
-  );
-}
-utton>
-            <img
-              src={viewFoto}
-              alt="Bukti Pengiriman"
-              className="w-full rounded-lg shadow-2xl"
-            />
-          </div>
-        </div>
-      )}
-    </AdminLayout>
-  );
-}
-              currentStatus={updateForm.status}
                   onUpdate={fetchPengiriman}
                 />
               )}

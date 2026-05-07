@@ -282,7 +282,6 @@ export default function JadwalPage() {
               value={filterStatus}
               onChange={(e) => {
                 setFilterStatus(e.target.value);
-                setPage(1);
               }}
               className="input w-full pl-9!"
             >
@@ -301,7 +300,6 @@ export default function JadwalPage() {
               value={filterTanggal}
               onChange={(e) => {
                 setFilterTanggal(e.target.value);
-                setPage(1);
               }}
               className="input w-full pl-9!"
             />
@@ -309,7 +307,7 @@ export default function JadwalPage() {
 
           {(filterStatus || filterTanggal) && (
             <button 
-              onClick={() => { setFilterStatus(''); setFilterTanggal(''); setPage(1); }}
+              onClick={() => { setFilterStatus(''); setFilterTanggal(''); }}
               className="text-sm text-zinc-500 hover:text-zinc-700"
             >
               ✕ Reset
@@ -562,47 +560,6 @@ export default function JadwalPage() {
                           </div>
                         ))}
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Warning if no kurir */}
-              {generateResult.jadwal?.some((j: any) => j.kurir === 'Belum ada') && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex gap-2">
-                  <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-amber-800">Beberapa jadwal belum ada kurir</p>
-                    <p className="text-xs text-amber-700 mt-1">Lakukan penugasan kurir ke dapur terlebih dahulu di menu &quot;Penugasan Kurir&quot;</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex gap-3 p-6 border-t border-gray-200">
-              <button
-                onClick={() => setShowGenerateModal(false)}
-                className="flex-1 px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
-              >
-                Tutup
-              </button>
-              <button
-                onClick={() => {
-                  setShowGenerateModal(false);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors"
-              >
-                Lihat Jadwal
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </AdminLayout>
-  );
-}
-         </div>
                     </div>
                   ))}
                 </div>
