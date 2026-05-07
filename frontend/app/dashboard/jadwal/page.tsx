@@ -91,6 +91,17 @@ export default function JadwalPage() {
     fetchAll();
   }, [user, authLoading, filterTanggal, filterStatus]);
 
+  const normalizeArray = <T,>(payload: unknown): T[] => {
+    if (Array.isArray(payload)) return payload as T[];
+    if (payload && typeof payload === 'object') {
+      const record = payload as Record<string, unknown>;
+      if (Array.isArray(record.data)) return record.data as T[];
+      if (Array.isArray(record.items)) return record.items as T[];
+      if (Array.isArray(record.results)) return record.results as T[];
+    }
+    return [];
+  };
+
   const fetchAll = async () => {
     try {
       const params: any = {};
@@ -111,12 +122,17 @@ export default function JadwalPage() {
       }
 
       const [jadwalRes, dapurRes, sekolahRes, kurirRes] = await Promise.all(fetchPromises);
-      setJadwalList(jadwalRes.data);
-      setDapurList(dapurRes.data);
-      setSekolahList(sekolahRes.data);
-      setKurirList(kurirRes.data);
-      setFilteredSekolahList(sekolahRes.data);
-      setFilteredKurirList(isAdmin ? kurirRes.data : []);
+      const jadwalData = normalizeArray<Jadwal>(jadwalRes.data);
+      const dapurData = normalizeArray<Dapur>(dapurRes.data);
+      const sekolahData = normalizeArray<Sekolah>(sekolahRes.data);
+      const kurirData = normalizeArray<Kurir>(kurirRes.data);
+
+      setJadwalList(jadwalData);
+      setDapurList(dapurData);
+      setSekolahList(sekolahData);
+      setKurirList(kurirData);
+      setFilteredSekolahList(sekolahData);
+      setFilteredKurirList(isAdmin ? kurirData : []);
     } catch (error) { console.error('Error fetching data:', error); }
     finally { setLoading(false); }
   };
@@ -124,17 +140,19 @@ export default function JadwalPage() {
   const fetchRelatedByDapur = useCallback(async (dapurId: number) => {
     try {
       const sekolahRes = await api.get(`/dapur/${dapurId}/sekolah`);
-      setFilteredSekolahList(sekolahRes.data);
+      const sekolahData = normalizeArray<Sekolah>(sekolahRes.data);
+      setFilteredSekolahList(sekolahData);
 
       const currentSekolahId = getValues('sekolah_id');
-      const sekolahValid = sekolahRes.data.some((s: Sekolah) => s.id === currentSekolahId);
+      const sekolahValid = sekolahData.some((s: Sekolah) => s.id === currentSekolahId);
       if (!sekolahValid) {
-        setValue('sekolah_id', sekolahRes.data[0]?.id || 0);
+        setValue('sekolah_id', sekolahData[0]?.id || 0);
       }
 
       if (isAdmin) {
         const dapurKurirRes = await api.get('/dapur-kurir', { params: { dapur_id: dapurId } });
-        const kurirIds = new Set((dapurKurirRes.data as DapurKurirRelation[]).map((r) => r.kurir_id));
+        const dapurKurirData = normalizeArray<DapurKurirRelation>(dapurKurirRes.data);
+        const kurirIds = new Set(dapurKurirData.map((r) => r.kurir_id));
         const mappedKurir = kurirList.filter((k) => kurirIds.has(k.id));
         setFilteredKurirList(mappedKurir);
 
