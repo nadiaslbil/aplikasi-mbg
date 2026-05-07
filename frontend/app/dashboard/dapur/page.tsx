@@ -109,8 +109,13 @@ export default function DapurPage() {
   const onSubmit = async (data: DapurForm) => {
     try {
       const payload = { ...data, user_id: data.user_id === 0 ? null : data.user_id };
-      if (editingId) await api.put(`/dapur/${editingId}`, payload);
-      else await api.post('/dapur', payload);
+      if (editingId) {
+        await api.put(`/dapur/${editingId}`, payload);
+        toast.success('Data dapur berhasil diupdate');
+      } else {
+        await api.post('/dapur', payload);
+        toast.success('Data dapur berhasil ditambahkan');
+      }
       fetchDapur();
       handleCloseForm();
     } catch (error: any) { toast.error(error.response?.data?.error || 'Terjadi kesalahan'); }
@@ -128,7 +133,11 @@ export default function DapurPage() {
 
   const handleDelete = async (id: number) => {
     if (!confirm('Yakin ingin menghapus dapur ini?')) return;
-    try { await api.delete(`/dapur/${id}`); fetchDapur(); }
+    try {
+      await api.delete(`/dapur/${id}`);
+      toast.success('Data dapur berhasil dihapus');
+      fetchDapur();
+    }
     catch (error: any) { toast.error(error.response?.data?.error || 'Terjadi kesalahan'); }
   };
 

@@ -179,8 +179,13 @@ export default function JadwalPage() {
   const onSubmit = async (data: JadwalForm) => {
     try {
       const payload = { ...data, kurir_id: data.kurir_id === 0 ? undefined : data.kurir_id };
-      if (editingId) await api.put(`/jadwal/${editingId}`, payload);
-      else await api.post('/jadwal', payload);
+      if (editingId) {
+        await api.put(`/jadwal/${editingId}`, payload);
+        toast.success('Jadwal berhasil diupdate');
+      } else {
+        await api.post('/jadwal', payload);
+        toast.success('Jadwal berhasil ditambahkan');
+      }
       fetchAll();
       handleCloseForm();
     } catch (error: any) { toast.error(error.response?.data?.error || 'Terjadi kesalahan'); }
@@ -203,7 +208,11 @@ export default function JadwalPage() {
 
   const handleDelete = async (id: number) => {
     if (!confirm('Yakin ingin menghapus jadwal ini?')) return;
-    try { await api.delete(`/jadwal/${id}`); fetchAll(); }
+    try {
+      await api.delete(`/jadwal/${id}`);
+      toast.success('Jadwal berhasil dihapus');
+      fetchAll();
+    }
     catch (error: any) { toast.error(error.response?.data?.error || 'Terjadi kesalahan'); }
   };
 
