@@ -1,21 +1,13 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
-import api from '@/lib/api';
-import AdminLayout from '@/components/AdminLayout';
-import BanjarnegaraMap from '@/components/BanjarnegaraMap';
-import LiveTrackingPanel from '@/components/LiveTrackingPanel';
-import {
-  School,
-  Store,
-  Truck,
-  AlertTriangle,
-  TrendingUp,
-  Calendar,
-  MapPin,
-} from 'lucide-react';
+import { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
+import api from "@/lib/api";
+import AdminLayout from "@/components/AdminLayout";
+import BanjarnegaraMap from "@/components/BanjarnegaraMap";
+import LiveTrackingPanel from "@/components/LiveTrackingPanel";
+import { School, Store, Truck, AlertTriangle, TrendingUp, Calendar, MapPin } from "lucide-react";
 
 interface DashboardStats {
   today: string;
@@ -40,33 +32,33 @@ export default function DashboardPage() {
 
   const fetchStats = async () => {
     try {
-      const response = await api.get('/dashboard/stats');
+      const response = await api.get("/dashboard/stats");
       setStats(response.data);
     } catch (error) {
-      console.error('Error fetching stats:', error);
+      console.error("Error fetching stats:", error);
     }
   };
 
   useEffect(() => {
     if (isLoading) return;
     if (!user) {
-      router.push('/login');
+      router.push("/login");
       return;
     }
 
     // Redirect non-admin users to their respective dashboards
-    if (user.role === 'kurir') {
-      router.replace('/dashboard/kurir');
+    if (user.role === "kurir") {
+      router.replace("/dashboard/kurir");
       return;
     }
-    if (user.role === 'supplier') {
-      router.replace('/dashboard/supplier');
+    if (user.role === "supplier") {
+      router.replace("/dashboard/supplier");
       return;
     }
 
     // Only allow admin_bgn and admin_daerah
-    if (user.role !== 'admin_bgn' && user.role !== 'admin_daerah') {
-      router.replace('/dashboard/kurir'); // Fallback
+    if (user.role !== "admin_bgn" && user.role !== "admin_daerah") {
+      router.replace("/dashboard/kurir"); // Fallback
       return;
     }
 
@@ -74,11 +66,21 @@ export default function DashboardPage() {
   }, [user, isLoading, router]);
 
   return (
-    <AdminLayout
-      currentPage="/dashboard"
-      title="Dashboard"
-      description="Ringkasan distribusi MBG Kabupaten Banjarnegara"
-    >
+    <AdminLayout currentPage="/dashboard" title="Dashboard" description="Ringkasan distribusi MBG Kabupaten Banjarnegara">
+      {/* Map */}
+      <div className="card mb-6">
+        <div className="px-5 py-4 border-b border-zinc-200/80">
+          <div className="flex items-center gap-2">
+            <MapPin size={18} className="text-zinc-500" />
+            <h2 className="text-base font-semibold text-zinc-900">Peta Distribusi MBG</h2>
+          </div>
+          <p className="text-sm text-zinc-500 mt-0.5">20 Kecamatan &middot; Data Sekolah & Dapur se-Kabupaten Banjarnegara</p>
+        </div>
+        <div className="p-5">
+          <BanjarnegaraMap />
+        </div>
+      </div>
+
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="stat-card">
@@ -139,20 +141,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Map */}
-      <div className="card mb-6">
-        <div className="px-5 py-4 border-b border-zinc-200/80">
-          <div className="flex items-center gap-2">
-            <MapPin size={18} className="text-zinc-500" />
-            <h2 className="text-base font-semibold text-zinc-900">Peta Distribusi MBG</h2>
-          </div>
-          <p className="text-sm text-zinc-500 mt-0.5">20 Kecamatan &middot; Data Sekolah & Dapur se-Kabupaten Banjarnegara</p>
-        </div>
-        <div className="p-5">
-          <BanjarnegaraMap />
-        </div>
-      </div>
-
       {/* Quick stats */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Live Tracking Panel */}
@@ -164,10 +152,10 @@ export default function DashboardPage() {
           </div>
           <div className="p-5 space-y-3">
             {[
-              { label: 'Total Bulan Ini', value: stats?.pengiriman_bulan_ini || 0, color: 'text-zinc-900' },
-              { label: 'Berhasil Diterima', value: stats?.jadwal_hari_ini.diterima || 0, color: 'text-emerald-700' },
-              { label: 'Dalam Pengiriman', value: stats?.jadwal_hari_ini.dalam_pengiriman || 0, color: 'text-orange-700' },
-              { label: 'Gagal', value: stats?.jadwal_hari_ini.gagal || 0, color: 'text-red-700' },
+              { label: "Total Bulan Ini", value: stats?.pengiriman_bulan_ini || 0, color: "text-zinc-900" },
+              { label: "Berhasil Diterima", value: stats?.jadwal_hari_ini.diterima || 0, color: "text-emerald-700" },
+              { label: "Dalam Pengiriman", value: stats?.jadwal_hari_ini.dalam_pengiriman || 0, color: "text-orange-700" },
+              { label: "Gagal", value: stats?.jadwal_hari_ini.gagal || 0, color: "text-red-700" },
             ].map((item) => (
               <div key={item.label} className="flex justify-between items-center py-1">
                 <span className="text-sm text-zinc-600">{item.label}</span>
@@ -181,9 +169,9 @@ export default function DashboardPage() {
           <h3 className="text-base font-semibold mb-4">Informasi Sistem</h3>
           <div className="space-y-3">
             {[
-              { icon: TrendingUp, text: 'Real-time tracking aktif' },
-              { icon: MapPin, text: 'Peta interaktif dengan filter' },
-              { icon: Truck, text: 'Monitoring kurir live' },
+              { icon: TrendingUp, text: "Real-time tracking aktif" },
+              { icon: MapPin, text: "Peta interaktif dengan filter" },
+              { icon: Truck, text: "Monitoring kurir live" },
             ].map(({ icon: Icon, text }) => (
               <div key={text} className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
