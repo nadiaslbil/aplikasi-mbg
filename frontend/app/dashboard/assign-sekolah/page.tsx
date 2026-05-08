@@ -30,6 +30,7 @@ interface Sekolah {
   alamat: string;
   kecamatan: string;
   jumlah_siswa: number;
+  dapur_pembina?: string | null;
 }
 
 interface DapurSekolah {
@@ -437,8 +438,8 @@ export default function AssignSekolahPage() {
                   >
                     <option value="">Pilih Sekolah</option>
                     {sekolahsArray.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.nama} - {s.kecamatan}
+                      <option key={s.id} value={s.id} className={s.dapur_pembina ? 'text-amber-600' : ''}>
+                        {s.nama} - {s.kecamatan} {s.dapur_pembina ? `(Sudah dibina: ${s.dapur_pembina})` : ''}
                       </option>
                     ))}
                   </select>
