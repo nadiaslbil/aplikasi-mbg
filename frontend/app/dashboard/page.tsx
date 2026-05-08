@@ -89,8 +89,8 @@ export default function DashboardPage() {
               <p className="stat-label">Sekolah Aktif</p>
               <p className="stat-value">{stats?.sekolah.total_aktif || 0}</p>
             </div>
-            <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
-              <School size={20} className="text-blue-600" />
+            <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
+              <School size={20} className="text-emerald-600" />
             </div>
           </div>
         </div>
@@ -101,8 +101,8 @@ export default function DashboardPage() {
               <p className="stat-label">Dapur Aktif</p>
               <p className="stat-value">{stats?.dapur.total_aktif || 0}</p>
             </div>
-            <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
-              <Store size={20} className="text-emerald-600" />
+            <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+              <Store size={20} className="text-blue-600" />
             </div>
           </div>
         </div>

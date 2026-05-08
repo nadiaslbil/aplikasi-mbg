@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, GeoJSON, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, GeoJSON, Marker, Popup, useMap, LayersControl, LayerGroup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import api from '@/lib/api';
 import { School, Store, MapPin, ListFilter, Truck } from 'lucide-react';
@@ -251,7 +251,7 @@ export default function BanjarnegaraMapImpl() {
         <button
           onClick={() => setShowSekolah(!showSekolah)}
           className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 ${
-            showSekolah ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            showSekolah ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
         >
           <School size={18} />
@@ -260,7 +260,7 @@ export default function BanjarnegaraMapImpl() {
         <button
           onClick={() => setShowDapur(!showDapur)}
           className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 ${
-            showDapur ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            showDapur ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
         >
           <Store size={18} />
@@ -301,109 +301,140 @@ export default function BanjarnegaraMapImpl() {
           style={{ height: '100%', width: '100%' }}
         >
           <MapUpdater center={BANJARNEGARA_CENTER} />
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
+          
+          <LayersControl position="topright">
+            <LayersControl.BaseLayer checked name="Peta Jalan (OSM)">
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+            </LayersControl.BaseLayer>
+            
+            <LayersControl.BaseLayer name="Satelit (Esri)">
+              <TileLayer
+                attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+                url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+              />
+            </LayersControl.BaseLayer>
 
-          {/* GeoJSON Kecamatan boundaries */}
-          {showKecamatan && geojson && (
-            <GeoJSON
-              data={geojson}
-              style={kecamatanStyle}
-              onEachFeature={onEachKecamatan}
-            />
-          )}
+            <LayersControl.BaseLayer name="Mode Gelap">
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              />
+            </LayersControl.BaseLayer>
 
-          {/* Sekolah markers */}
-          {showSekolah && mapData?.sekolah.map((sekolah) => (
-            <Marker
-              key={`sekolah-${sekolah.id}`}
-              position={[sekolah.latitude, sekolah.longitude]}
-              icon={sekolahMarker}
-            >
-              <Popup>
-                <div className="p-2 min-w-[200px]">
-                  <h3 className="font-bold text-blue-600 mb-2 flex items-center gap-2">
-                    <IconCircle icon="school" size={16} color="blue" />
-                    {sekolah.nama}
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-1">{sekolah.alamat}</p>
-                  <p className="text-sm text-gray-600">Kecamatan: {sekolah.kecamatan}</p>
-                  <p className="text-sm text-gray-600">Siswa: {sekolah.jumlah_siswa}</p>
-                  <span className={`inline-block mt-2 px-2 py-1 rounded text-xs font-medium ${
-                    sekolah.status === 'aktif' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}>
-                    {sekolah.status}
-                  </span>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
+            <LayersControl.Overlay checked name="Batas Kecamatan">
+              <LayerGroup>
+                {geojson && (
+                  <GeoJSON
+                    data={geojson}
+                    style={kecamatanStyle}
+                    onEachFeature={onEachKecamatan}
+                  />
+                )}
+              </LayerGroup>
+            </LayersControl.Overlay>
 
-          {/* Dapur markers */}
-          {showDapur && mapData?.dapur.map((dapur) => (
-            <Marker
-              key={`dapur-${dapur.id}`}
-              position={[dapur.latitude, dapur.longitude]}
-              icon={dapurMarker}
-            >
-              <Popup>
-                <div className="p-2 min-w-[200px]">
-                  <h3 className="font-bold text-green-600 mb-2 flex items-center gap-2">
-                    <IconCircle icon="store" size={16} color="green" />
-                    {dapur.nama}
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-1">{dapur.alamat}</p>
-                  <p className="text-sm text-gray-600">Kecamatan: {dapur.kecamatan}</p>
-                  <p className="text-sm text-gray-600">Kapasitas: {dapur.kapasitas_harian} porsi/hari</p>
-                  <span className={`inline-block mt-2 px-2 py-1 rounded text-xs font-medium ${
-                    dapur.status === 'aktif' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}>
-                    {dapur.status}
-                  </span>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
+            <LayersControl.Overlay checked name="Sekolah Penerima MBG">
+              <LayerGroup>
+                {mapData?.sekolah.map((sekolah) => (
+                  <Marker
+                    key={`sekolah-${sekolah.id}`}
+                    position={[sekolah.latitude, sekolah.longitude]}
+                    icon={sekolahMarker}
+                  >
+                    <Popup>
+                      <div className="p-2 min-w-[200px]">
+                        <h3 className="font-bold text-green-600 mb-2 flex items-center gap-2">
+                          <IconCircle icon="school" size={16} color="green" />
+                          {sekolah.nama}
+                        </h3>
+                        <p className="text-sm text-gray-600 mb-1">{sekolah.alamat}</p>
+                        <p className="text-sm text-gray-600">Kecamatan: {sekolah.kecamatan}</p>
+                        <p className="text-sm text-gray-600">Siswa: {sekolah.jumlah_siswa}</p>
+                        <span className={`inline-block mt-2 px-2 py-1 rounded text-xs font-medium ${
+                          sekolah.status === 'aktif' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
+                          {sekolah.status}
+                        </span>
+                      </div>
+                    </Popup>
+                  </Marker>
+                ))}
+              </LayerGroup>
+            </LayersControl.Overlay>
 
-          {/* Live Courier markers */}
-          {showCourier && liveCouriers.map((courier) => (
-            <Marker
-              key={`courier-${courier.pengirimanId}`}
-              position={[courier.latitude, courier.longitude]}
-              icon={courierMarkerIcon}
-            >
-              <Popup>
-                <div className="p-2 min-w-[220px]">
-                  <h3 className="font-bold text-orange-600 mb-2 flex items-center gap-2">
-                    <Truck size={16} />
-                    {courier.kurirNama}
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-1">
-                    📍 Menuju: <strong>{courier.sekolahNama}</strong>
-                  </p>
-                  <span className={`inline-block mt-1 px-2 py-1 rounded text-xs font-medium ${
-                    courier.status === 'dalam_perjalanan' ? 'bg-orange-100 text-orange-800' :
-                    courier.status === 'diterima' ? 'bg-green-100 text-green-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
-                    {courier.status === 'dalam_perjalanan' ? '🚚 Dalam Perjalanan' :
-                     courier.status === 'diterima' ? '✅ Diterima' :
-                     '❌ Gagal'}
-                  </span>
-                  {courier.catatan && (
-                    <p className="text-xs text-gray-500 mt-2 italic">
-                      &ldquo;{courier.catatan}&rdquo;
-                    </p>
-                  )}
-                  <p className="text-xs text-gray-400 mt-2">
-                    Update: {new Date(courier.timestamp).toLocaleTimeString('id-ID')}
-                  </p>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
+            <LayersControl.Overlay checked name="Dapur/Supplier">
+              <LayerGroup>
+                {mapData?.dapur.map((dapur) => (
+                  <Marker
+                    key={`dapur-${dapur.id}`}
+                    position={[dapur.latitude, dapur.longitude]}
+                    icon={dapurMarker}
+                  >
+                    <Popup>
+                      <div className="p-2 min-w-[200px]">
+                        <h3 className="font-bold text-blue-600 mb-2 flex items-center gap-2">
+                          <IconCircle icon="store" size={16} color="blue" />
+                          {dapur.nama}
+                        </h3>
+                        <p className="text-sm text-gray-600 mb-1">{dapur.alamat}</p>
+                        <p className="text-sm text-gray-600">Kecamatan: {dapur.kecamatan}</p>
+                        <p className="text-sm text-gray-600">Kapasitas: {dapur.kapasitas_harian} porsi/hari</p>
+                        <span className={`inline-block mt-2 px-2 py-1 rounded text-xs font-medium ${
+                          dapur.status === 'aktif' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
+                          {dapur.status}
+                        </span>
+                      </div>
+                    </Popup>
+                  </Marker>
+                ))}
+              </LayerGroup>
+            </LayersControl.Overlay>
+
+            <LayersControl.Overlay checked name="Kurir (Live)">
+              <LayerGroup>
+                {liveCouriers.map((courier) => (
+                  <Marker
+                    key={`courier-${courier.pengirimanId}`}
+                    position={[courier.latitude, courier.longitude]}
+                    icon={courierMarkerIcon}
+                  >
+                    <Popup>
+                      <div className="p-2 min-w-[220px]">
+                        <h3 className="font-bold text-orange-600 mb-2 flex items-center gap-2">
+                          <Truck size={16} />
+                          {courier.kurirNama}
+                        </h3>
+                        <p className="text-sm text-gray-600 mb-1">
+                          📍 Menuju: <strong>{courier.sekolahNama}</strong>
+                        </p>
+                        <span className={`inline-block mt-1 px-2 py-1 rounded text-xs font-medium ${
+                          courier.status === 'dalam_perjalanan' ? 'bg-orange-100 text-orange-800' :
+                          courier.status === 'diterima' ? 'bg-green-100 text-green-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {courier.status === 'dalam_perjalanan' ? '🚚 Dalam Perjalanan' :
+                           courier.status === 'diterima' ? '✅ Diterima' :
+                           '❌ Gagal'}
+                        </span>
+                        {courier.catatan && (
+                          <p className="text-xs text-gray-500 mt-2 italic">
+                            &ldquo;{courier.catatan}&rdquo;
+                          </p>
+                        )}
+                        <p className="text-xs text-gray-400 mt-2">
+                          Update: {new Date(courier.timestamp).toLocaleTimeString('id-ID')}
+                        </p>
+                      </div>
+                    </Popup>
+                  </Marker>
+                ))}
+              </LayerGroup>
+            </LayersControl.Overlay>
+          </LayersControl>
         </MapContainer>
       </div>
 
@@ -416,11 +447,11 @@ export default function BanjarnegaraMapImpl() {
             <span className="text-sm">Batas Kecamatan Banjarnegara</span>
           </div>
           <div className="flex items-center gap-2">
-            <IconCircle icon="school" size={18} color="blue" />
+            <IconCircle icon="school" size={18} color="green" />
             <span className="text-sm">Sekolah Penerima MBG</span>
           </div>
           <div className="flex items-center gap-2">
-            <IconCircle icon="store" size={18} color="green" />
+            <IconCircle icon="store" size={18} color="blue" />
             <span className="text-sm">Dapur/Supplier</span>
           </div>
           <div className="flex items-center gap-2">

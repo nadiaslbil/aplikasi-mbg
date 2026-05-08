@@ -47,7 +47,7 @@ export function IconCircle({ icon, size = 18, color = 'blue', strokeWidth = 2 }:
 // ============================================
 export const sekolahMarker = L.divIcon({
   html: renderToString(
-    <div style={{ width: 40, height: 40, backgroundColor: '#3b82f6', borderRadius: '9999px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+    <div style={{ width: 40, height: 40, backgroundColor: '#22c55e', borderRadius: '9999px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
       <School size={18} strokeWidth={2} color="white" />
     </div>
   ),
@@ -58,7 +58,7 @@ export const sekolahMarker = L.divIcon({
 
 export const dapurMarker = L.divIcon({
   html: renderToString(
-    <div style={{ width: 40, height: 40, backgroundColor: '#22c55e', borderRadius: '9999px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+    <div style={{ width: 40, height: 40, backgroundColor: '#3b82f6', borderRadius: '9999px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
       <Store size={18} strokeWidth={2} color="white" />
     </div>
   ),
