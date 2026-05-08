@@ -84,7 +84,7 @@ export default function AssignSekolahPage() {
       const [relResp, dapurResp, sekolahResp] = await Promise.all([
         fetch(`${API_URL}/dapur-sekolah`, { headers: { Authorization: `Bearer ${token}` } }),
         fetch(`${API_URL}/dapur`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API_URL}/sekolah`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/sekolah?limit=100`, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
 
       if (!relResp.ok || !dapurResp.ok || !sekolahResp.ok) {
@@ -100,12 +100,13 @@ export default function AssignSekolahPage() {
       const [relRes, dapurRes, sekolahRes] = await Promise.all([
         relResp.ok ? relResp.json() : Promise.resolve([]),
         dapurResp.ok ? dapurResp.json() : Promise.resolve([]),
-        sekolahResp.ok ? sekolahResp.json() : Promise.resolve([]),
+        sekolahResp.ok ? sekolahResp.json() : Promise.resolve({ data: [] }),
       ]);
 
       setRelations(Array.isArray(relRes) ? relRes : []);
       setDapurs(Array.isArray(dapurRes) ? dapurRes : []);
-      setSekolahs(Array.isArray(sekolahRes) ? sekolahRes : []);
+      // Handle paginated response for sekolah
+      setSekolahs(Array.isArray(sekolahRes.data) ? sekolahRes.data : []);
     } catch (error) {
       console.error('Error fetching data:', error);
       setRelations([]);
