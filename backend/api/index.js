@@ -38,6 +38,7 @@ app.use("/api/kurir", require("../routes/kurir"));
 app.use("/api/dapur-kurir", require("../routes/dapur-kurir"));
 app.use("/api/dapur-sekolah", require("../routes/dapur-sekolah"));
 app.use("/api/upload", require("../routes/upload"));
+app.use("/api/settings", require("../routes/settings"));
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({

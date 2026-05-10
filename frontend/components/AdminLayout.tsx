@@ -2,6 +2,7 @@
 
 import { useState, ReactNode } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useSettings } from '@/context/SettingsContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -20,6 +21,7 @@ import {
   Layers,
   Users,
   UserCheck,
+  Settings,
 } from 'lucide-react';
 
 interface MenuItem {
@@ -52,10 +54,12 @@ const allMenuItems: MenuItem[] = [
   { href: '/dashboard/stok', icon: Layers, label: 'Stok Bahan', roles: ['admin_bgn', 'admin_daerah', 'supplier'] },
   { href: '/dashboard/insiden', icon: AlertTriangle, label: 'Insiden', roles: ['admin_bgn', 'admin_daerah', 'kurir', 'supplier'] },
   { href: '/dashboard/users', icon: Users, label: 'Manajemen User', roles: ['admin_bgn'] },
+  { href: '/dashboard/settings', icon: Settings, label: 'Pengaturan', roles: ['admin_bgn'] },
 ];
 
 export default function AdminLayout({ children, currentPage, title, description }: AdminLayoutProps) {
   const { user, logout } = useAuth();
+  const { settings } = useSettings();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -89,10 +93,16 @@ export default function AdminLayout({ children, currentPage, title, description 
         {/* Logo Header - Tinggi sejajar dengan navbar (h-16) */}
         <div className="flex items-center justify-between px-5 h-16 border-b border-zinc-200/80 flex-shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <Package size={18} className="text-white" />
-            </div>
-            <span className="text-base font-semibold text-zinc-900 tracking-tight">MBG Admin</span>
+            {settings.app_logo ? (
+              <img src={settings.app_logo} alt="Logo" className="w-8 h-8 object-contain" />
+            ) : (
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <Package size={18} className="text-white" />
+              </div>
+            )}
+            <span className="text-base font-semibold text-zinc-900 tracking-tight">
+              {settings.app_name || 'MBG Admin'}
+            </span>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
@@ -122,6 +132,13 @@ export default function AdminLayout({ children, currentPage, title, description 
 
         {/* User section - Fixed at bottom */}
         <div className="flex-shrink-0 p-3 border-t border-zinc-200/80 bg-white">
+          {settings.org_name && (
+            <div className="px-2 mb-2">
+              <p className="text-[10px] text-zinc-400 uppercase tracking-widest font-medium truncate">
+                {settings.org_name}
+              </p>
+            </div>
+          )}
           <div className="flex items-center gap-3 px-2 py-2 mb-1">
             <div className="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center text-sm font-medium text-zinc-600">
               {user?.nama?.charAt(0).toUpperCase() || 'A'}
