@@ -57,7 +57,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const updateSettings = async (newSettings: Partial<Settings>) => {
     try {
       await api.put('/settings', newSettings);
-      setSettings(prev => ({ ...prev, ...newSettings }));
+      setSettings(prev => ({ ...prev, ...newSettings } as Settings));
     } catch (error) {
       console.error('Failed to update settings:', error);
       throw error;
