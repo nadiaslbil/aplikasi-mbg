@@ -7,13 +7,15 @@ import AdminLayout from "@/components/AdminLayout";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
-import { Plus, Edit, Trash2, X as CloseIcon, Search, Users, Shield, Mail } from "lucide-react";
+import { Plus, Edit, Trash2, X as CloseIcon, Search, Users, Shield, Mail, Phone, Image as ImageIcon } from "lucide-react";
 
 interface User {
   id: number;
   nama: string;
   email: string;
   role: string;
+  avatar: string | null;
+  no_telp: string | null;
   created_at: string;
 }
 
@@ -22,6 +24,8 @@ interface UserForm {
   email: string;
   password: string;
   role: string;
+  avatar: string;
+  no_telp: string;
 }
 
 const roleOptions = [
@@ -88,7 +92,14 @@ export default function UsersPage() {
 
   const handleEdit = (u: User) => {
     setEditingId(u.id);
-    reset({ nama: u.nama, email: u.email, password: "", role: u.role });
+    reset({ 
+      nama: u.nama, 
+      email: u.email, 
+      password: "", 
+      role: u.role,
+      avatar: u.avatar || "",
+      no_telp: u.no_telp || ""
+    });
     setShowForm(true);
   };
 
@@ -147,6 +158,14 @@ export default function UsersPage() {
               <div>
                 <label className="form-label">Email</label>
                 <input {...register("email", { required: true })} type="email" className="input" placeholder="email@contoh.com" />
+              </div>
+              <div>
+                <label className="form-label">Nomor Telepon</label>
+                <input {...register("no_telp")} className="input" placeholder="Contoh: 081234567890" />
+              </div>
+              <div>
+                <label className="form-label">URL Foto Profil</label>
+                <input {...register("avatar")} className="input" placeholder="https://link-foto.com/foto.jpg" />
               </div>
               <div>
                 <label className="form-label">Password {editingId && <span className="text-zinc-400 font-normal">(kosongkan jika tidak diubah)</span>}</label>
@@ -217,14 +236,26 @@ export default function UsersPage() {
                   <tr key={u.id}>
                     <td>
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-zinc-100 flex items-center justify-center text-sm font-medium text-zinc-600 flex-shrink-0">{u.nama.charAt(0).toUpperCase()}</div>
+                        {u.avatar ? (
+                          <img src={u.avatar} alt={u.nama} className="w-9 h-9 rounded-full object-cover flex-shrink-0 border border-zinc-200" />
+                        ) : (
+                          <div className="w-9 h-9 rounded-full bg-zinc-100 flex items-center justify-center text-sm font-medium text-zinc-600 flex-shrink-0">{u.nama.charAt(0).toUpperCase()}</div>
+                        )}
                         <span className="font-medium text-zinc-900">{u.nama}</span>
                       </div>
                     </td>
                     <td>
-                      <div className="flex items-center gap-1.5 text-zinc-500">
-                        <Mail size={14} />
-                        {u.email}
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1.5 text-zinc-500">
+                          <Mail size={14} />
+                          {u.email}
+                        </div>
+                        {u.no_telp && (
+                          <div className="flex items-center gap-1.5 text-zinc-400 text-xs">
+                            <Phone size={12} />
+                            {u.no_telp}
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td>

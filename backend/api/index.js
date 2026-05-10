@@ -68,7 +68,14 @@ app.post("/api/auth/login", async (req, res) => {
 
     res.json({
       token,
-      user: { id: user.id, nama: user.nama, email: user.email, role: user.role },
+      user: { 
+        id: user.id, 
+        nama: user.nama, 
+        email: user.email, 
+        role: user.role,
+        avatar: user.avatar,
+        no_telp: user.no_telp
+      },
     });
   } catch (error) {
     console.error("Login Error:", error);

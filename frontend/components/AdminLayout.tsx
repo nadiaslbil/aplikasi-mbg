@@ -140,9 +140,13 @@ export default function AdminLayout({ children, currentPage, title, description 
             </div>
           )}
           <div className="flex items-center gap-3 px-2 py-2 mb-1">
-            <div className="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center text-sm font-medium text-zinc-600">
-              {user?.nama?.charAt(0).toUpperCase() || 'A'}
-            </div>
+            {user?.avatar ? (
+              <img src={user.avatar} alt={user.nama} className="w-8 h-8 rounded-full object-cover border border-zinc-200" />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center text-sm font-medium text-zinc-600">
+                {user?.nama?.charAt(0).toUpperCase() || 'A'}
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-zinc-900 truncate">{user?.nama}</p>
               <p className="text-xs text-zinc-500 truncate">{user?.email}</p>
