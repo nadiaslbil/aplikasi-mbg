@@ -62,7 +62,16 @@ export default function InsidenPage() {
   const isSupplier = user?.role === 'supplier';
   const isAdmin = user?.role === 'admin_bgn' || user?.role === 'admin_daerah';
 
-  const { register, handleSubmit, reset } = useForm<InsidenForm>();
+  const { register, handleSubmit, reset, getValues, watch } = useForm<InsidenForm>();
+  const selectedTipe = watch('tipe');
+
+  const tipeHints: Record<string, string> = {
+    Keterlambatan: 'Contoh: Keterlambatan pengiriman melebihi 15 menit dari jadwal yang telah ditentukan.',
+    Kualitas: 'Contoh: Penurunan kualitas makanan seperti rasa asam, aroma tidak sedap, atau kondisi makanan tidak matang.',
+    Kuantitas: 'Contoh: Jumlah porsi yang diterima kurang dari total jumlah siswa yang terdaftar.',
+    Kerusakan: 'Contoh: Terjadi kerusakan pada kemasan, kebocoran, atau segel pengamanan yang terbuka.',
+    Lainnya: 'Silakan berikan rincian insiden secara detail pada kolom deskripsi yang tersedia.',
+  };
 
   // Auto-set dapur_id for kurir & supplier
   useEffect(() => {
@@ -217,7 +226,11 @@ export default function InsidenPage() {
                       {...register('dapur_id', { valueAsNumber: true })}
                     />
                     <div className="input bg-zinc-50 text-zinc-600 cursor-not-allowed">
-                      {dapurList.find(d => d.id === (isSupplier ? dapurList.find(sd => (sd as any).user_id === user?.id)?.id : 0))?.nama || 'Otomatis dari dapur Anda'}
+                      {(() => {
+                        const currentDapurId = getValues('dapur_id');
+                        const dapur = dapurList.find(d => d.id === currentDapurId);
+                        return dapur ? dapur.nama : 'Dapur Anda';
+                      })()}
                     </div>
                     <p className="text-xs text-zinc-500 mt-1">Dapur sudah otomatis dipilih</p>
                   </>
@@ -237,6 +250,11 @@ export default function InsidenPage() {
                   <option value="Kerusakan">Kerusakan Kemasan</option>
                   <option value="Lainnya">Lainnya</option>
                 </select>
+                {selectedTipe && (
+                  <p className="text-xs text-blue-600 mt-1.5 leading-relaxed bg-blue-50/50 p-2 rounded border border-blue-100 italic">
+                    {tipeHints[selectedTipe]}
+                  </p>
+                )}
               </div>
               <div>
                 <label className="form-label">Tanggal</label>
