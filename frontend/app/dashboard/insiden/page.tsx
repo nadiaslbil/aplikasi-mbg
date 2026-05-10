@@ -98,9 +98,14 @@ export default function InsidenPage() {
         api.get('/sekolah'),
         api.get('/dapur'),
       ]);
-      setInsidenList(insidenRes.data);
-      setSekolahList(sekolahRes.data);
-      setDapurList(dapurRes.data);
+      
+      setInsidenList(Array.isArray(insidenRes.data) ? insidenRes.data : []);
+      
+      // Handle paginated response for sekolah
+      const sekolahData = sekolahRes.data.data || (Array.isArray(sekolahRes.data) ? sekolahRes.data : []);
+      setSekolahList(sekolahData);
+      
+      setDapurList(Array.isArray(dapurRes.data) ? dapurRes.data : []);
     } catch (error) { console.error('Error:', error); }
     finally { setLoading(false); }
   };
