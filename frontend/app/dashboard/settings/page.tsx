@@ -15,6 +15,7 @@ interface SettingsForm {
   map_center_lat: string;
   map_center_lng: string;
   map_zoom: string;
+  [key: string]: any;
 }
 
 export default function SettingsPage() {
