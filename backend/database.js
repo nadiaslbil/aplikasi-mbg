@@ -76,11 +76,19 @@ function transformQuery(sql) {
 async function run(sql, params = []) {
   if (isPostgres) {
     let pgSql = transformQuery(sql);
-    if (pgSql.trim().toUpperCase().startsWith("INSERT") && !pgSql.toUpperCase().includes("RETURNING")) {
+    const isInsert = pgSql.trim().toUpperCase().startsWith("INSERT");
+    const hasReturning = pgSql.toUpperCase().includes("RETURNING");
+    const isSettings = pgSql.toUpperCase().includes("INTO SETTINGS");
+
+    if (isInsert && !hasReturning && !isSettings) {
       pgSql += " RETURNING id";
     }
+    
     const result = await pool.query(pgSql, params);
-    return { lastID: result.rows[0]?.id || null, changes: result.rowCount };
+    return { 
+      lastID: (isInsert && !isSettings) ? result.rows[0]?.id || null : null, 
+      changes: result.rowCount 
+    };
   } else {
     return new Promise((resolve, reject) => {
       db.run(sql, params, function (err) {
