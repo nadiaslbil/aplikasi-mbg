@@ -1,26 +1,32 @@
 # 📦 HANDOVER DOKUMENTASI - MBG Distribution System
 
-> **Tanggal:** 10 Mei 2026 (UPDATED)
+> **Tanggal:** 11 Mei 2026 (UPDATED)
 > **Status:** Production Ready (Cloud-Native + CORS Fixed + Postgres Optimized)
 > **Fokus:** Kabupaten Banjarnegara, Jawa Tengah
-> **Latest Update:** ✅ Dynamic App Settings + ✅ User Profile Avatars & Phone + ✅ Incident Reporting Fix
+> **Latest Update:** ✅ Personal Profile Management + ✅ Dynamic App Settings + ✅ User Profile Avatars & Phone
 
 ---
 
-## 📋 RINGKASAN SINGKAT (UPDATE 10 MEI 2026)
+## 📋 RINGKASAN SINGKAT (UPDATE 11 MEI 2026)
 
-Aplikasi ini telah mencapai tahap kematangan tinggi dengan penambahan fitur **Dynamic Settings** yang memungkinkan perubahan branding tanpa kode. Masalah pada laporan insiden telah diperbaiki, dan sistem identitas user kini lebih lengkap dengan dukungan foto profil (avatar) dan nomor telepon.
+Aplikasi ini telah mencapai tahap kematangan tinggi dengan penambahan fitur **Personal Profile Management** yang memungkinkan setiap pengguna mengelola informasi pribadi dan keamanan mereka secara mandiri. Hal ini melengkapi fitur **Dynamic Settings** dan perbaikan sistem identitas user sebelumnya.
 
 ---
 
-## 🆕 PERBAIKAN & FITUR TERBARU (Update 10 Mei 2026)
+## 🆕 PERBAIKAN & FITUR TERBARU (Update 11 Mei 2026)
 
-### ✅ **Dynamic Application Settings**
+### ✅ **Personal Profile Management**
+- **Self-Service Profile:** Setiap pengguna (Admin, Kurir, Supplier) dapat mengubah Nama, Nomor Telepon, dan Foto Profil mereka sendiri.
+- **Security Update:** Fitur ganti password mandiri dengan validasi kecocokan konfirmasi password.
+- **Integrated UI:** Navigasi profil terintegrasi langsung pada bagian identitas user di sidebar (bottom section) untuk akses yang lebih intuitif.
+- **Real-time Sync:** Perubahan data profil (nama/foto) langsung tersinkronisasi ke seluruh antarmuka aplikasi tanpa perlu login ulang melalui `AuthContext`.
+
+### ✅ **Dynamic Application Settings** (Prev Update)
 - **Sistem Branding:** Nama aplikasi, logo, instansi, dan copyright dapat diubah langsung dari dashboard oleh Super Admin.
 - **Global Settings Context:** Perubahan pengaturan langsung diterapkan secara *real-time* ke seluruh UI aplikasi.
 - **Konfigurasi Peta:** Admin dapat mengatur koordinat pusat dan zoom peta secara dinamis.
 
-### ✅ **Enhanced User Profiles**
+### ✅ **Enhanced User Profiles** (Prev Update)
 - **Avatar & No. Telp:** Penambahan kolom foto profil dan nomor telepon pada sistem user.
 - **Self-Update API:** Setiap user (termasuk Kurir & Supplier) kini dapat memperbarui data profil mereka sendiri.
 
