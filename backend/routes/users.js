@@ -72,8 +72,11 @@ router.put("/:id", authenticateToken, requireRole(permissions.users.updateOwn), 
       return res.status(403).json({ error: "Hanya Admin BGN yang bisa mengupdate user lain" });
     }
 
-    // If not admin_bgn, they cannot change their own role
-    const finalRole = (req.user.role !== "admin_bgn" && isSelf) ? existing.role : role;
+    // Determine final role: 
+    // 1. If not admin_bgn updating self, keep existing role
+    // 2. If role is provided in body (usually by admin), use that
+    // 3. Fallback to existing role
+    const finalRole = (req.user.role !== "admin_bgn" && isSelf) ? existing.role : (role || existing.role);
 
     if (password) {
       const hashPassword = bcrypt.hashSync(password, 10);
