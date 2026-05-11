@@ -20,6 +20,7 @@ import {
   Package,
   Layers,
   Users,
+  User,
   UserCheck,
   Settings,
 } from 'lucide-react';
@@ -54,6 +55,7 @@ const allMenuItems: MenuItem[] = [
   { href: '/dashboard/stok', icon: Layers, label: 'Stok Bahan', roles: ['admin_bgn', 'admin_daerah', 'supplier'] },
   { href: '/dashboard/insiden', icon: AlertTriangle, label: 'Insiden', roles: ['admin_bgn', 'admin_daerah', 'kurir', 'supplier'] },
   { href: '/dashboard/users', icon: Users, label: 'Manajemen User', roles: ['admin_bgn'] },
+  { href: '/dashboard/profile', icon: User, label: 'Profil Saya' },
   { href: '/dashboard/settings', icon: Settings, label: 'Pengaturan', roles: ['admin_bgn'] },
 ];
 
