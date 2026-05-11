@@ -55,7 +55,6 @@ const allMenuItems: MenuItem[] = [
   { href: '/dashboard/stok', icon: Layers, label: 'Stok Bahan', roles: ['admin_bgn', 'admin_daerah', 'supplier'] },
   { href: '/dashboard/insiden', icon: AlertTriangle, label: 'Insiden', roles: ['admin_bgn', 'admin_daerah', 'kurir', 'supplier'] },
   { href: '/dashboard/users', icon: Users, label: 'Manajemen User', roles: ['admin_bgn'] },
-  { href: '/dashboard/profile', icon: User, label: 'Profil Saya' },
   { href: '/dashboard/settings', icon: Settings, label: 'Pengaturan', roles: ['admin_bgn'] },
 ];
 
@@ -141,19 +140,22 @@ export default function AdminLayout({ children, currentPage, title, description 
               </p>
             </div>
           )}
-          <div className="flex items-center gap-3 px-2 py-2 mb-1">
+          <Link 
+            href="/dashboard/profile"
+            className="flex items-center gap-3 px-2 py-2 mb-1 rounded-lg hover:bg-zinc-50 transition-colors group"
+          >
             {user?.avatar ? (
               <img src={user.avatar} alt={user.nama} className="w-8 h-8 rounded-full object-cover border border-zinc-200" />
             ) : (
-              <div className="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center text-sm font-medium text-zinc-600">
+              <div className="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center text-sm font-medium text-zinc-600 group-hover:bg-white transition-colors">
                 {user?.nama?.charAt(0).toUpperCase() || 'A'}
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-zinc-900 truncate">{user?.nama}</p>
-              <p className="text-xs text-zinc-500 truncate">{user?.email}</p>
+              <p className="text-sm font-medium text-zinc-900 truncate group-hover:text-blue-600 transition-colors">{user?.nama}</p>
+              <p className="text-xs text-zinc-500 truncate">Lihat Profil</p>
             </div>
-          </div>
+          </Link>
           <button
             onClick={handleLogout}
             className="sidebar-link w-full text-zinc-500 hover:text-red-600 hover:bg-red-50"
