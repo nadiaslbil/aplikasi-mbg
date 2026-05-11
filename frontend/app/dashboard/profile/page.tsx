@@ -136,11 +136,13 @@ export default function ProfilePage() {
                   {/* Nama */}
                   <div>
                     <label className="form-label">Nama Lengkap</label>
-                    <div className="relative">
-                      <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+                    <div className="flex items-stretch border border-zinc-200 rounded-lg overflow-hidden hover:border-zinc-300 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/10 transition-all">
+                      <span className="flex items-center px-3 bg-zinc-50 border-r border-zinc-200 text-zinc-400 flex-shrink-0">
+                        <User size={14} />
+                      </span>
                       <input
                         {...register("nama", { required: "Nama wajib diisi" })}
-                        className="input pl-9"
+                        className="flex-1 px-3 py-2 text-sm bg-white outline-none text-zinc-800 placeholder:text-zinc-400"
                         placeholder="Nama Anda"
                       />
                     </div>
@@ -151,12 +153,14 @@ export default function ProfilePage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="form-label">Email</label>
-                      <div className="relative">
-                        <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+                      <div className="flex items-stretch border border-zinc-200 rounded-lg overflow-hidden hover:border-zinc-300 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/10 transition-all">
+                        <span className="flex items-center px-3 bg-zinc-50 border-r border-zinc-200 text-zinc-400 flex-shrink-0">
+                          <Mail size={14} />
+                        </span>
                         <input
                           {...register("email", { required: "Email wajib diisi" })}
                           type="email"
-                          className="input pl-9"
+                          className="flex-1 px-3 py-2 text-sm bg-white outline-none text-zinc-800 placeholder:text-zinc-400"
                           placeholder="email@anda.com"
                         />
                       </div>
@@ -164,11 +168,13 @@ export default function ProfilePage() {
                     </div>
                     <div>
                       <label className="form-label">Nomor Telepon</label>
-                      <div className="relative">
-                        <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+                      <div className="flex items-stretch border border-zinc-200 rounded-lg overflow-hidden hover:border-zinc-300 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/10 transition-all">
+                        <span className="flex items-center px-3 bg-zinc-50 border-r border-zinc-200 text-zinc-400 flex-shrink-0">
+                          <Phone size={14} />
+                        </span>
                         <input
                           {...register("no_telp")}
-                          className="input pl-9"
+                          className="flex-1 px-3 py-2 text-sm bg-white outline-none text-zinc-800 placeholder:text-zinc-400"
                           placeholder="08xxxxxxxx"
                         />
                       </div>
@@ -178,11 +184,13 @@ export default function ProfilePage() {
                   {/* URL Avatar */}
                   <div>
                     <label className="form-label">URL Foto Profil</label>
-                    <div className="relative">
-                      <Camera size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+                    <div className="flex items-stretch border border-zinc-200 rounded-lg overflow-hidden hover:border-zinc-300 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/10 transition-all">
+                      <span className="flex items-center px-3 bg-zinc-50 border-r border-zinc-200 text-zinc-400 flex-shrink-0">
+                        <Camera size={14} />
+                      </span>
                       <input
                         {...register("avatar")}
-                        className="input pl-9"
+                        className="flex-1 px-3 py-2 text-sm bg-white outline-none text-zinc-800 placeholder:text-zinc-400"
                         placeholder="https://link-foto.com/foto.jpg"
                       />
                     </div>
@@ -205,12 +213,14 @@ export default function ProfilePage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="form-label">Password Baru</label>
-                    <div className="relative">
-                      <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+                    <div className="flex items-stretch border border-zinc-200 rounded-lg overflow-hidden hover:border-zinc-300 focus-within:border-orange-400 focus-within:ring-2 focus-within:ring-orange-400/10 transition-all">
+                      <span className="flex items-center px-3 bg-zinc-50 border-r border-zinc-200 text-zinc-400 flex-shrink-0">
+                        <Lock size={14} />
+                      </span>
                       <input
                         {...register("password", { minLength: { value: 6, message: "Minimal 6 karakter" } })}
                         type="password"
-                        className="input pl-9"
+                        className="flex-1 px-3 py-2 text-sm bg-white outline-none text-zinc-800 placeholder:text-zinc-400"
                         placeholder="••••••••"
                       />
                     </div>
@@ -218,12 +228,14 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <label className="form-label">Konfirmasi Password</label>
-                    <div className="relative">
-                      <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+                    <div className="flex items-stretch border border-zinc-200 rounded-lg overflow-hidden hover:border-zinc-300 focus-within:border-orange-400 focus-within:ring-2 focus-within:ring-orange-400/10 transition-all">
+                      <span className="flex items-center px-3 bg-zinc-50 border-r border-zinc-200 text-zinc-400 flex-shrink-0">
+                        <Lock size={14} />
+                      </span>
                       <input
                         {...register("confirmPassword")}
                         type="password"
-                        className="input pl-9"
+                        className="flex-1 px-3 py-2 text-sm bg-white outline-none text-zinc-800 placeholder:text-zinc-400"
                         placeholder="••••••••"
                       />
                     </div>
