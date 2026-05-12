@@ -270,24 +270,6 @@ router.post('/generate-weekly', authenticateToken, requireRole(permissions.jadwa
   }
 });
 
-    await trx.commit();
-
-    await logAudit({
-      action: 'GENERATE_BULK',
-      table_name: 'jadwal_distribusi',
-      record_id: 0,
-      new_values: { dates: dateRange, count: results.created },
-      req
-    });
-
-    res.json(results);
-  } catch (error) {
-    await trx.rollback();
-    console.error('Generate bulk error:', error);
-    res.status(500).json({ error: 'Gagal men-generate jadwal: ' + error.message });
-  }
-});
-
 // Get jadwal by id
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
