@@ -16,7 +16,9 @@ import {
   Search,
   School,
   Store,
+  Download,
 } from 'lucide-react';
+import { exportToExcel } from '@/lib/export';
 
 interface Sekolah {
   id: number;
@@ -137,6 +139,29 @@ export default function SekolahPage() {
     setShowForm(false);
     setEditingId(null);
     reset();
+  };
+
+  const handleExport = () => {
+    if (sekolahList.length === 0) {
+      toast.error('Tidak ada data untuk diexport');
+      return;
+    }
+
+    const exportData = sekolahList.map(s => ({
+      Nama: s.nama,
+      Alamat: s.alamat,
+      Kecamatan: s.kecamatan,
+      Kabupaten: s.kabupaten,
+      Provinsi: s.provinsi,
+      'Jumlah Siswa': s.jumlah_siswa,
+      Kontak: s.kontak || '-',
+      Status: s.status,
+      'Dapur Pembina': s.dapur_pembina || '-'
+    }));
+
+    const success = exportToExcel(exportData, 'Data_Sekolah_MBG', 'Sekolah');
+    if (success) toast.success('Data berhasil diexport ke Excel');
+    else toast.error('Gagal mengexport data');
   };
 
   const getVisiblePages = () => {
@@ -340,7 +365,10 @@ export default function SekolahPage() {
                           ))}
                         </div>
                       ) : (
-                        <span className="text-zing('id-ID')}</td>
+                        <span className="text-zinc-400 text-xs italic">Belum ada</span>
+                      )}
+                    </td>
+                    <td className="text-right font-medium">{sekolah.jumlah_siswa.toLocaleString('id-ID')}</td>
                     <td className="hidden lg:table-cell text-zinc-500">{sekolah.kontak || '-'}</td>
                     <td>
                       <span className={`badge ${sekolah.status === 'aktif' ? 'badge-green' : 'badge-red'}`}>
@@ -413,10 +441,10 @@ export default function SekolahPage() {
                   {visiblePages[visiblePages.length - 1] < totalPages - 1 && <span className="text-zinc-400 px-0.5">...</span>}
                   <button
                     onClick={() => setPage(totalPages)}
-                  .length - 1] < totalPages - 1 && <span className="text-zinc-400 px-0.5">...</span>}
-                  <button
-                    onClick={() => setPage(totalPages)}
-                          </button>
+                    className="w-8 h-8 flex items-center justify-center rounded text-sm hover:bg-zinc-100 text-zinc-600 transition-colors"
+                  >
+                    {totalPages}
+                  </button>
                 </>
               )}
             </div>
@@ -447,33 +475,6 @@ export default function SekolahPage() {
                 className="btn-secondary"
               >
                 Batal
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDelete(deleteTarget.id)}
-                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-medium transition-colors"
-              >
-                Hapus
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </AdminLayout>
-  );
-}
--700 font-medium transition-colors"
-              >
-                Hapus
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </AdminLayout>
-  );
-}
-              Batal
               </button>
               <button
                 type="button"

@@ -133,6 +133,28 @@ export default function PengirimanPage() {
     setUpdateForm(prev => ({ ...prev, bukti_foto: filename }));
   };
 
+  const handleExport = () => {
+    if (pengirimanList.length === 0) {
+      toast.error('Tidak ada data untuk diexport');
+      return;
+    }
+
+    const exportData = pengirimanList.map(p => ({
+      ID: p.id,
+      Tanggal: p.tanggal,
+      'Waktu Kirim': p.waktu_kirim,
+      Dapur: p.dapur_nama,
+      Sekolah: p.sekolah_nama,
+      Kurir: p.kurir_nama,
+      Status: p.status,
+      Catatan: p.catatan || '-'
+    }));
+
+    const success = exportToExcel(exportData, 'Data_Pengiriman_MBG', 'Pengiriman');
+    if (success) toast.success('Data berhasil diexport ke Excel');
+    else toast.error('Gagal mengexport data');
+  };
+
   const getFotoUrl = (filename: string | null) => {
     if (!filename) return null;
     if (filename.startsWith('http')) return filename;
@@ -159,6 +181,15 @@ export default function PengirimanPage() {
             </button>
           );
         })}
+
+        <button
+          onClick={handleExport}
+          className="btn-secondary flex items-center gap-2 ml-auto"
+          title="Export ke Excel"
+        >
+          <Download size={16} />
+          <span>Export Excel</span>
+        </button>
       </div>
 
       {/* Table */}
@@ -282,25 +313,6 @@ export default function PengirimanPage() {
       {viewFoto && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[2000] flex items-center justify-center p-4 animate-fadeIn" onClick={() => setViewFoto(null)}>
           <div className="relative max-w-4xl w-full z-[2100]">
-            <button
-              onClick={() => setViewFoto(null)}
-              className="absolute -top-10 right-0 text-white hover:text-gray-300 flex items-center gap-2"
-            >
-              <X size={20} />
-              <span className="text-sm">Tutup</span>
-            </button>
-            <img
-              src={viewFoto}
-              alt="Bukti Pengiriman"
-              className="w-full rounded-lg shadow-2xl"
-            />
-          </div>
-        </div>
-      )}
-    </AdminLayout>
-  );
-}
-  <div className="relative max-w-4xl w-full z-[2100]">
             <button
               onClick={() => setViewFoto(null)}
               className="absolute -top-10 right-0 text-white hover:text-gray-300 flex items-center gap-2"

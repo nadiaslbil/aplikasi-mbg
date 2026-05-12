@@ -127,6 +127,27 @@ export default function InsidenPage() {
     } catch (error: any) { toast.error(error.response?.data?.error || 'Terjadi kesalahan'); }
   };
 
+  const handleExport = () => {
+    if (insidenList.length === 0) {
+      toast.error('Tidak ada data untuk diexport');
+      return;
+    }
+
+    const exportData = insidenList.map(i => ({
+      ID: i.id,
+      Tanggal: i.tanggal,
+      Tipe: i.tipe,
+      Deskripsi: i.deskripsi,
+      Sekolah: i.sekolah_nama || '-',
+      Dapur: i.dapur_nama || '-',
+      Status: statusLabel[i.status] || i.status
+    }));
+
+    const success = exportToExcel(exportData, 'Data_Insiden_MBG', 'Insiden');
+    if (success) toast.success('Data berhasil diexport ke Excel');
+    else toast.error('Gagal mengexport data');
+  };
+
   const handleUpdateStatus = (insiden: Insiden) => {
     setSelectedInsiden(insiden);
     setUpdateStatus(insiden.status);
@@ -411,28 +432,6 @@ export default function InsidenPage() {
               {/* Actions */}
               <div className="flex gap-2 pt-4 border-t border-zinc-200">
                 <button
-                  type="button"
-                  onClick={() => setShowUpdateModal(false)}
-                  className="btn-secondary flex-1"
-                >
-                  Batal
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSubmitUpdate}
-                  className="btn-primary flex-1"
-                >
-                  Update Status
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </AdminLayout>
-  );
-}
-tton
                   type="button"
                   onClick={() => setShowUpdateModal(false)}
                   className="btn-secondary flex-1"
