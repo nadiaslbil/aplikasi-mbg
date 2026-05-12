@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, GeoJSON, Marker, Popup, useMap, LayersControl, LayerGroup } from 'react-leaflet';
+import { MapContainer, TileLayer, GeoJSON, Marker, Popup, useMap, LayersControl, LayerGroup, ZoomControl } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import api from '@/lib/api';
 import { School, Store, MapPin, ListFilter, Truck } from 'lucide-react';
@@ -245,7 +245,7 @@ export default function BanjarnegaraMapImpl() {
           style={{ height: '100%', width: '100%' }}
           zoomControl={false}
         >
-          <L.Control.Zoom position="bottomright" />
+          <ZoomControl position="bottomright" />
           <MapUpdater center={BANJARNEGARA_CENTER} />
           
           <LayersControl position="topright">
