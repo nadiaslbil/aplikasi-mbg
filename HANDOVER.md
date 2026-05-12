@@ -3,17 +3,21 @@
 > **Tanggal:** 12 Mei 2026 (LATEST UPDATE)
 > **Status:** Production Ready (Knex.js + Zod Validated + Soft Delete + Resilient UI)
 > **Fokus:** Kabupaten Banjarnegara, Jawa Tengah
-> **Latest Update:** ✅ Database Modernization + ✅ Input Validation + ✅ Data Integrity + ✅ Error Handling
+> **Latest Update:** ✅ Database Modernization + ✅ Input Validation + ✅ Data Integrity + ✅ Password Policy Hardening
 
 ---
 
 ## 📋 RINGKASAN SINGKAT (UPDATE 12 MEI 2026)
 
-Aplikasi telah melalui fase penguatan fundamental pada arsitektur Backend dan Frontend. Fokus utama adalah pada **Stabilitas Database**, **Keamanan Input**, **Integritas Data**, dan **Ketangguhan UI**. Sistem kini menggunakan standar industri modern untuk memastikan operasional di Vercel berjalan tanpa kendala teknis yang umum.
+Aplikasi telah melalui fase penguatan fundamental pada arsitektur Backend dan Frontend. Fokus utama adalah pada **Stabilitas Database**, **Keamanan Input**, **Integritas Data**, dan **Ketangguhan UI**. Sistem kini menggunakan standar industri modern untuk memastikan operasional di Vercel berjalan tanpa kendala teknis yang umum serta perlindungan akun yang lebih kuat.
 
 ---
 
 ## 🆕 PERBAIKAN & FITUR TERBARU (Update 12 Mei 2026)
+
+### ✅ **Security Hardening (Password Policy)**
+- **Strict Password Rules:** Menggunakan Zod untuk mewajibkan password minimal 8 karakter, serta harus mengandung huruf besar dan angka.
+- **Account Protection:** Mengurangi risiko peretasan akun melalui serangan menebak password (*brute force*).
 
 ### ✅ **Backend Modernization (Knex.js Implementation)**
 - **SQL Transformation Fix:** Menghapus logika penggantian string manual yang berisiko. Knex.js kini menangani perbedaan dialek antara SQLite (Lokal) dan Postgres (Vercel) secara otomatis dan aman.
@@ -44,7 +48,7 @@ Aplikasi telah melalui fase penguatan fundamental pada arsitektur Backend dan Fr
 │   │   └── index.js                  # Main Entry Point & CORS Config
 │   ├── routes/                       # Refactored: Knex-based Routes
 │   ├── validation/
-│   │   └── schemas.js                # ✅ New: Zod Validation Schemas
+│   │   └── schemas.js                # ✅ Updated: Strict Zod Schemas
 │   ├── database.js                   # ✅ Refactored: Knex Configuration
 │   ├── migration-soft-delete.js      # ✅ New: Database Migration Script
 ...
@@ -67,4 +71,4 @@ Aplikasi telah melalui fase penguatan fundamental pada arsitektur Backend dan Fr
 
 ---
 
-**© 2026 - MBG Distribution System - Last Updated: 12 Mei 2026 (Architecture & Security Strengthening)**
+**© 2026 - MBG Distribution System - Last Updated: 12 Mei 2026 (Security & Stability Hardening)**
