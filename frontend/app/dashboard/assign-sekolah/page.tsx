@@ -74,7 +74,6 @@ export default function AssignSekolahPage() {
     'senin', 'selasa', 'rabu', 'kamis', 'jumat',
   ]);
 
-  const isAdmin = user?.role === 'admin_bgn' || user?.role === 'admin_daerah';
   const hariList = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu'];
 
   useEffect(() => {

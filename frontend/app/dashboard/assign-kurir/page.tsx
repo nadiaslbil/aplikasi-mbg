@@ -68,8 +68,6 @@ export default function AssignKurirPage() {
     tanggal_mulai: new Date().toISOString().split('T')[0],
   });
 
-  const isAdmin = user?.role === 'admin_bgn' || user?.role === 'admin_daerah';
-
   useEffect(() => {
     fetchData();
     fetchOptions();
