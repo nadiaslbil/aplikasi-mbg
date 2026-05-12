@@ -3,6 +3,7 @@ const router = express.Router();
 const { db } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
 const { requireRole, permissions } = require('../middleware/rbac');
+const { logAudit } = require('../middleware/audit');
 
 // Get all pengiriman
 router.get('/', authenticateToken, async (req, res) => {
@@ -116,12 +117,23 @@ router.post('/', authenticateToken, requireRole(permissions.pengiriman.create), 
       status: 'dalam_perjalanan'
     }).returning('id');
 
+    const newId = typeof id === 'object' ? id.id : id;
+
+    // Log audit
+    await logAudit({
+      action: 'CREATE',
+      table_name: 'pengiriman',
+      record_id: newId,
+      new_values: { jadwal_id, kurir_id, status: 'dalam_perjalanan' },
+      req
+    });
+
     // Update jadwal status
     await db('jadwal_distribusi').where({ id: jadwal_id }).update({ status: 'dalam_pengiriman' });
 
     res.status(201).json({
       message: 'Pengiriman berhasil dibuat',
-      id: typeof id === 'object' ? id.id : id,
+      id: newId,
     });
   } catch (error) {
     console.error('Create pengiriman error:', error);
@@ -129,7 +141,7 @@ router.post('/', authenticateToken, requireRole(permissions.pengiriman.create), 
   }
 });
 
-// Update pengiriman (termasuk location tracking)
+// Update pengiriman (termasuk status & data lainnya)
 router.put('/:id', authenticateToken, requireRole(permissions.pengiriman.updateStatus), async (req, res) => {
   try {
     const { latitude, longitude, status, bukti_foto, catatan, waktu_berangkat, waktu_tiba } = req.body;
@@ -144,18 +156,30 @@ router.put('/:id', authenticateToken, requireRole(permissions.pengiriman.updateS
       return res.status(403).json({ error: 'Anda hanya bisa mengupdate pengiriman Anda sendiri' });
     }
 
+    const updatePayload = {
+      latitude: latitude !== undefined ? latitude : existing.latitude,
+      longitude: longitude !== undefined ? longitude : existing.longitude,
+      status: status || existing.status,
+      bukti_foto: bukti_foto || existing.bukti_foto,
+      catatan: catatan !== undefined ? catatan : existing.catatan,
+      waktu_berangkat: waktu_berangkat || existing.waktu_berangkat,
+      waktu_tiba: waktu_tiba || existing.waktu_tiba,
+      updated_at: db.fn.now()
+    };
+
     await db('pengiriman')
       .where({ id: req.params.id })
-      .update({
-        latitude: latitude !== undefined ? latitude : existing.latitude,
-        longitude: longitude !== undefined ? longitude : existing.longitude,
-        status: status || existing.status,
-        bukti_foto: bukti_foto || existing.bukti_foto,
-        catatan: catatan !== undefined ? catatan : existing.catatan,
-        waktu_berangkat: waktu_berangkat || existing.waktu_berangkat,
-        waktu_tiba: waktu_tiba || existing.waktu_tiba,
-        updated_at: db.fn.now()
-      });
+      .update(updatePayload);
+
+    // Log audit
+    await logAudit({
+      action: 'UPDATE',
+      table_name: 'pengiriman',
+      record_id: req.params.id,
+      old_values: existing,
+      new_values: updatePayload,
+      req
+    });
 
     if (status === 'diterima') {
       await db('jadwal_distribusi')
@@ -170,7 +194,7 @@ router.put('/:id', authenticateToken, requireRole(permissions.pengiriman.updateS
   }
 });
 
-// Update lokasi kurir
+// Update lokasi kurir (Khusus endpoint tracking GPS)
 router.put('/:id/location', authenticateToken, requireRole(permissions.pengiriman.updateStatus), async (req, res) => {
   try {
     const { latitude, longitude, status, catatan } = req.body;

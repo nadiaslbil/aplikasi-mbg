@@ -4,6 +4,7 @@ const { db } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
 const { requireRole, permissions } = require('../middleware/rbac');
 const { jadwalSchema, validate } = require('../validation/schemas');
+const { logAudit } = require('../middleware/audit');
 
 // Get all jadwal distribusi
 router.get('/', authenticateToken, async (req, res) => {
@@ -167,9 +168,20 @@ router.post('/', authenticateToken, requireRole(permissions.jadwal.create), vali
       catatan: catatan || null
     }).returning('id');
 
+    const newId = typeof id === 'object' ? id.id : id;
+
+    // Log audit
+    await logAudit({
+      action: 'CREATE',
+      table_name: 'jadwal_distribusi',
+      record_id: newId,
+      new_values: req.body,
+      req
+    });
+
     res.status(201).json({
       message: 'Jadwal distribusi berhasil ditambahkan',
-      id: typeof id === 'object' ? id.id : id,
+      id: newId,
     });
   } catch (error) {
     console.error('Create jadwal error:', error);
@@ -210,19 +222,31 @@ router.put('/:id', authenticateToken, requireRole(permissions.jadwal.update), va
       }
     }
 
+    const updatePayload = {
+      dapur_id: finalDapurId,
+      sekolah_id: finalSekolahId,
+      tanggal: tanggal || existing.tanggal,
+      waktu_kirim: waktu_kirim !== undefined ? waktu_kirim : existing.waktu_kirim,
+      waktu_terima: waktu_terima !== undefined ? waktu_terima : existing.waktu_terima,
+      jumlah_porsi: jumlah_porsi || existing.jumlah_porsi,
+      status: status || existing.status,
+      catatan: catatan !== undefined ? catatan : existing.catatan,
+      updated_at: db.fn.now()
+    };
+
     await db('jadwal_distribusi')
       .where({ id: req.params.id })
-      .update({
-        dapur_id: finalDapurId,
-        sekolah_id: finalSekolahId,
-        tanggal: tanggal || existing.tanggal,
-        waktu_kirim: waktu_kirim !== undefined ? waktu_kirim : existing.waktu_kirim,
-        waktu_terima: waktu_terima !== undefined ? waktu_terima : existing.waktu_terima,
-        jumlah_porsi: jumlah_porsi || existing.jumlah_porsi,
-        status: status || existing.status,
-        catatan: catatan !== undefined ? catatan : existing.catatan,
-        updated_at: db.fn.now()
-      });
+      .update(updatePayload);
+
+    // Log audit
+    await logAudit({
+      action: 'UPDATE',
+      table_name: 'jadwal_distribusi',
+      record_id: req.params.id,
+      old_values: existing,
+      new_values: updatePayload,
+      req
+    });
 
     res.json({ message: 'Jadwal distribusi berhasil diupdate' });
   } catch (error) {
@@ -255,11 +279,6 @@ router.delete('/:id', authenticateToken, requireRole(permissions.jadwal.delete),
   } catch (error) {
     console.error('Delete jadwal error:', error);
     res.status(500).json({ error: 'Terjadi kesalahan server' });
-  }
-});
-
-module.exports = router;
-salahan server' });
   }
 });
 

@@ -52,9 +52,20 @@ router.post("/", authenticateToken, requireRole(permissions.users.create), valid
       no_telp: no_telp || null
     }).returning('id');
 
+    const newId = typeof id === 'object' ? id.id : id;
+
+    // Log audit
+    await logAudit({
+      action: 'CREATE',
+      table_name: 'users',
+      record_id: newId,
+      new_values: { nama, email, role, avatar, no_telp },
+      req
+    });
+
     res.status(201).json({ 
       message: "User berhasil ditambahkan", 
-      id: typeof id === 'object' ? id.id : id 
+      id: newId 
     });
   } catch (error) {
     console.error("Create user error:", error);
@@ -94,6 +105,19 @@ router.put("/:id", authenticateToken, requireRole(permissions.users.updateOwn), 
 
     await db('users').where({ id }).update(updateData);
 
+    // Log audit (exclude password_hash from logs)
+    const { password_hash, ...loggedOldValues } = existing;
+    const { password_hash: _, ...loggedNewValues } = updateData;
+
+    await logAudit({
+      action: 'UPDATE',
+      table_name: 'users',
+      record_id: id,
+      old_values: loggedOldValues,
+      new_values: loggedNewValues,
+      req
+    });
+
     res.json({ message: "User berhasil diupdate" });
   } catch (error) {
     console.error("Update user error:", error);
@@ -111,17 +135,17 @@ router.delete("/:id", authenticateToken, requireRole(permissions.users.delete), 
     if (!existing) return res.status(404).json({ error: "User tidak ditemukan" });
 
     await db('users').where({ id }).update({ deleted_at: db.fn.now() });
-    res.json({ message: "User berhasil dihapus" });
-  } catch (error) {
-    console.error("Delete user error:", error);
-    res.status(500).json({ error: "Terjadi kesalahan server" });
-  }
-});
 
-module.exports = router;
-temukan" });
+    // Log audit
+    const { password_hash, ...loggedOldValues } = existing;
+    await logAudit({
+      action: 'DELETE',
+      table_name: 'users',
+      record_id: id,
+      old_values: loggedOldValues,
+      req
+    });
 
-    await db('users').where({ id }).update({ deleted_at: db.fn.now() });
     res.json({ message: "User berhasil dihapus" });
   } catch (error) {
     console.error("Delete user error:", error);

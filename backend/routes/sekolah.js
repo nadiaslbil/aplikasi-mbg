@@ -4,6 +4,7 @@ const { db } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
 const { requireRole, permissions } = require('../middleware/rbac');
 const { sekolahSchema, validate } = require('../validation/schemas');
+const { logAudit } = require('../middleware/audit');
 
 // Get all sekolah
 router.get('/', authenticateToken, async (req, res) => {
@@ -160,9 +161,20 @@ router.post('/', authenticateToken, requireRole(permissions.sekolah.create), val
       kontak: kontak || null
     }).returning('id');
 
+    const newId = typeof id === 'object' ? id.id : id;
+
+    // Log audit
+    await logAudit({
+      action: 'CREATE',
+      table_name: 'sekolah',
+      record_id: newId,
+      new_values: req.body,
+      req
+    });
+
     res.status(201).json({
       message: 'Sekolah berhasil ditambahkan',
-      id: typeof id === 'object' ? id.id : id,
+      id: newId,
     });
   } catch (error) {
     console.error('Create sekolah error:', error);
@@ -181,21 +193,33 @@ router.put('/:id', authenticateToken, requireRole(permissions.sekolah.update), v
       return res.status(404).json({ error: 'Sekolah tidak ditemukan' });
     }
 
+    const updatePayload = {
+      nama,
+      alamat,
+      latitude,
+      longitude,
+      kecamatan,
+      kabupaten,
+      provinsi,
+      jumlah_siswa,
+      kontak,
+      status,
+      updated_at: db.fn.now()
+    };
+
     await db('sekolah')
       .where({ id: req.params.id })
-      .update({
-        nama,
-        alamat,
-        latitude,
-        longitude,
-        kecamatan,
-        kabupaten,
-        provinsi,
-        jumlah_siswa,
-        kontak,
-        status,
-        updated_at: db.fn.now()
-      });
+      .update(updatePayload);
+
+    // Log audit
+    await logAudit({
+      action: 'UPDATE',
+      table_name: 'sekolah',
+      record_id: req.params.id,
+      old_values: existing,
+      new_values: updatePayload,
+      req
+    });
 
     res.json({ message: 'Sekolah berhasil diupdate' });
   } catch (error) {
@@ -232,8 +256,5 @@ router.delete('/:id', authenticateToken, requireRole(permissions.sekolah.delete)
     res.status(500).json({ error: 'Terjadi kesalahan server' });
   }
 });
-
-module.exports = router;
-;
 
 module.exports = router;

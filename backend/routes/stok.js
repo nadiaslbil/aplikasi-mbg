@@ -4,6 +4,7 @@ const { db } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
 const { requireRole, permissions } = require('../middleware/rbac');
 const { stokSchema, validate } = require('../validation/schemas');
+const { logAudit } = require('../middleware/audit');
 
 // Get all stok bahan
 router.get('/', authenticateToken, async (req, res) => {
@@ -72,9 +73,20 @@ router.post('/', authenticateToken, requireRole(permissions.stok.create), valida
       expired_date
     }).returning('id');
 
+    const newId = typeof id === 'object' ? id.id : id;
+
+    // Log audit
+    await logAudit({
+      action: 'CREATE',
+      table_name: 'stok_bahan',
+      record_id: newId,
+      new_values: req.body,
+      req
+    });
+
     res.status(201).json({
       message: 'Stok bahan berhasil ditambahkan',
-      id: typeof id === 'object' ? id.id : id,
+      id: newId,
     });
   } catch (error) {
     console.error('Create stok error:', error);
@@ -103,15 +115,27 @@ router.put('/:id', authenticateToken, requireRole(permissions.stok.update), vali
       return res.status(403).json({ error: 'Anda hanya bisa mengubah stok dapur Anda sendiri' });
     }
 
+    const updatePayload = {
+      nama_bahan: nama_bahan || existing.nama_bahan,
+      jumlah: jumlah !== undefined ? jumlah : existing.jumlah,
+      satuan: satuan || existing.satuan,
+      expired_date: expired_date || existing.expired_date,
+      updated_at: db.fn.now()
+    };
+
     await db('stok_bahan')
       .where({ id: req.params.id })
-      .update({
-        nama_bahan: nama_bahan || existing.nama_bahan,
-        jumlah: jumlah !== undefined ? jumlah : existing.jumlah,
-        satuan: satuan || existing.satuan,
-        expired_date: expired_date || existing.expired_date,
-        updated_at: db.fn.now()
-      });
+      .update(updatePayload);
+
+    // Log audit
+    await logAudit({
+      action: 'UPDATE',
+      table_name: 'stok_bahan',
+      record_id: req.params.id,
+      old_values: existing,
+      new_values: updatePayload,
+      req
+    });
 
     res.json({ message: 'Stok bahan berhasil diupdate' });
   } catch (error) {
@@ -144,11 +168,6 @@ router.delete('/:id', authenticateToken, requireRole(permissions.stok.delete), a
   } catch (error) {
     console.error('Delete stok error:', error);
     res.status(500).json({ error: 'Terjadi kesalahan server' });
-  }
-});
-
-module.exports = router;
-rjadi kesalahan server' });
   }
 });
 

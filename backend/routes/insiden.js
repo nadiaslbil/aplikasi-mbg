@@ -4,6 +4,7 @@ const { db } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
 const { requireRole, permissions } = require('../middleware/rbac');
 const { insidenSchema, validate } = require('../validation/schemas');
+const { logAudit } = require('../middleware/audit');
 
 // Get all insiden
 router.get('/', authenticateToken, async (req, res) => {
@@ -80,9 +81,20 @@ router.post('/', authenticateToken, validate(insidenSchema), async (req, res) =>
       tanggal,
     }).returning('id');
 
+    const newId = typeof id === 'object' ? id.id : id;
+
+    // Log audit
+    await logAudit({
+      action: 'CREATE',
+      table_name: 'insiden',
+      record_id: newId,
+      new_values: req.body,
+      req
+    });
+
     res.status(201).json({
       message: 'Insiden berhasil dilaporkan',
-      id: typeof id === 'object' ? id.id : id,
+      id: newId,
     });
   } catch (error) {
     console.error('Create insiden error:', error);
@@ -101,14 +113,26 @@ router.put('/:id', authenticateToken, requireRole(permissions.insiden.update), v
       return res.status(404).json({ error: 'Insiden tidak ditemukan' });
     }
 
+    const updatePayload = { 
+      status, 
+      ditangani_oleh: ditangani_oleh || null, 
+      tindak_lanjut: tindak_lanjut || null,
+      updated_at: db.fn.now()
+    };
+
     await db('insiden')
       .where({ id: req.params.id })
-      .update({ 
-        status, 
-        ditangani_oleh: ditangani_oleh || null, 
-        tindak_lanjut: tindak_lanjut || null,
-        updated_at: db.fn.now()
-      });
+      .update(updatePayload);
+
+    // Log audit
+    await logAudit({
+      action: 'UPDATE',
+      table_name: 'insiden',
+      record_id: req.params.id,
+      old_values: existing,
+      new_values: updatePayload,
+      req
+    });
 
     res.json({ message: 'Insiden berhasil diupdate' });
   } catch (error) {
@@ -141,12 +165,6 @@ router.delete('/:id', authenticateToken, requireRole(permissions.insiden.delete)
   } catch (error) {
     console.error('Delete insiden error:', error);
     res.status(500).json({ error: 'Terjadi kesalahan server' });
-  }
-});
-
-module.exports = router;
-xports = router;
- server' });
   }
 });
 

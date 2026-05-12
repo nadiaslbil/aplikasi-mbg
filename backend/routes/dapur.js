@@ -4,6 +4,7 @@ const { db } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
 const { requireRole, permissions } = require('../middleware/rbac');
 const { dapurSchema, validate } = require('../validation/schemas');
+const { logAudit } = require('../middleware/audit');
 
 // Get all dapur supplier
 router.get('/', authenticateToken, async (req, res) => {
@@ -118,9 +119,20 @@ router.post('/', authenticateToken, requireRole(permissions.dapur.create), valid
       penanggung_jawab: penanggung_jawab || null,
     }).returning('id');
 
+    const newId = typeof id === 'object' ? id.id : id;
+
+    // Log audit
+    await logAudit({
+      action: 'CREATE',
+      table_name: 'dapur_supplier',
+      record_id: newId,
+      new_values: req.body,
+      req
+    });
+
     res.status(201).json({
       message: 'Dapur supplier berhasil ditambahkan',
-      id: typeof id === 'object' ? id.id : id,
+      id: newId,
     });
   } catch (error) {
     console.error('Create dapur error:', error);
@@ -198,6 +210,15 @@ router.delete('/:id', authenticateToken, requireRole(permissions.dapur.delete), 
     await db('dapur_supplier')
       .where({ id: req.params.id })
       .update({ deleted_at: db.fn.now() });
+
+    // Log audit
+    await logAudit({
+      action: 'DELETE',
+      table_name: 'dapur_supplier',
+      record_id: req.params.id,
+      old_values: existing,
+      req
+    });
 
     res.json({ message: 'Dapur supplier berhasil dihapus' });
   } catch (error) {
