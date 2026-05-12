@@ -9,7 +9,10 @@ const loginSchema = z.object({
 const registerSchema = z.object({
   nama: z.string().min(3, 'Nama minimal 3 karakter').max(100),
   email: z.string().email('Format email tidak valid'),
-  password: z.string().min(6, 'Password minimal 6 karakter'),
+  password: z.string()
+    .min(8, 'Password minimal 8 karakter')
+    .regex(/[A-Z]/, 'Password harus mengandung setidaknya satu huruf besar')
+    .regex(/[0-9]/, 'Password harus mengandung setidaknya satu angka'),
   role: z.enum(['admin_bgn', 'admin_daerah', 'kurir', 'supplier']).optional(),
 });
 
@@ -54,7 +57,10 @@ const userUpdateSchema = z.object({
 
 const changePasswordSchema = z.object({
   oldPassword: z.string().min(1, 'Password lama wajib diisi'),
-  newPassword: z.string().min(6, 'Password baru minimal 6 karakter'),
+  newPassword: z.string()
+    .min(8, 'Password baru minimal 8 karakter')
+    .regex(/[A-Z]/, 'Password baru harus mengandung setidaknya satu huruf besar')
+    .regex(/[0-9]/, 'Password baru harus mengandung setidaknya satu angka'),
 });
 
 // Incident Schema

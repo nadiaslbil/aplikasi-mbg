@@ -2,8 +2,8 @@
 
 > **Tanggal Analisis Terakhir:** 12 Mei 2026 (UPDATED)  
 > **Total Item:** 21  
-> **Fixed:** 15/21 (71%)  
-> **Pending:** 6/21 (29%)  
+> **Fixed:** 16/21 (76%)  
+> **Pending:** 5/21 (24%)  
 
 ---
 
@@ -11,14 +11,14 @@
 
 | Kategori | Fixed | Pending | Completion |
 |----------|-------|---------|------------|
-| **KRITIS** (High) | 7/9 | 2 | 78% |
+| **KRITIS** (High) | 8/9 | 1 | 89% |
 | **PENTING** (Medium) | 4/5 | 1 | 80% |
 | **REKOMENDASI** (Low) | 4/7 | 3 | 57% |
-| **TOTAL** | **15/21** | **6** | **71%** |
+| **TOTAL** | **16/21** | **5** | **76%** |
 
 ---
 
-## ✅ SUDAH DIPERBAIKI (15/21)
+## ✅ SUDAH DIPERBAIKI (16/21)
 
 ### 1. ✅ Relasi User Supplier ↔ Data Dapur
 - **Status:** FIXED
@@ -26,25 +26,24 @@
 
 ...
 
-### 12. ✅ Implementasi Soft Delete
+### 6. ✅ Implementasi Validasi Input (Zod)
 - **Status:** FIXED
-- **Implementasi:** Menambahkan kolom `deleted_at` pada seluruh tabel utama.
+- **Implementasi:** Menggunakan library **Zod** untuk skema validasi input yang ketat pada seluruh rute utama.
 
-### 14. ✅ Error Boundary Frontend
+### 7. ✅ Kebijakan Password (Password Policy)
 - **Status:** FIXED
-- **Implementasi:** Menambahkan komponen **ErrorBoundary** global untuk menangkap kesalahan runtime JavaScript di frontend. Hal ini mencegah aplikasi "crash" menjadi layar putih total dan memberikan antarmuka yang ramah bagi pengguna untuk memuat ulang halaman atau kembali ke dashboard.
+- **Implementasi:** Memperkuat validasi password pada saat registrasi dan ganti password menggunakan Zod. Aturan baru mewajibkan: **Minimal 8 karakter**, **Minimal 1 huruf besar**, dan **Minimal 1 angka**. Hal ini mencegah penggunaan password lemah seperti `admin123`.
 
-### 17. ✅ Implementasi Notifikasi Modern (Sonner)
+### 8. ✅ Endpoint Delete Insiden
 ...
 
 ---
 
-## ❌ BELUM DIPERBAIKI (6/21)
+## ❌ BELUM DIPERBAIKI (5/21)
 
 ### 🔴 KRITIS (High Priority)
 
-#### 7. ❌ Password Policy & Default Password Lemah
-- **Masalah:** Default `admin123`. Tidak ada validasi kompleksitas password.
+(Semua item kritis utama telah diperbaiki)
 
 ---
 
@@ -74,8 +73,8 @@
 
 ## 🎯 Rekomendasi Prioritas Perbaikan Selanjutnya
 
-1. **SECURITY (Item 7):** Perkuat aturan password (minimal 1 huruf besar, 1 angka).
-2. **AUDIT (Item 13):** Implementasi tabel audit_logs untuk mencatat perubahan data.
+1. **AUDIT (Item 13):** Implementasi tabel audit_logs untuk mencatat perubahan data.
+2. **CLEAN CODE (Item 15):** Sentralisasi logika autentikasi di frontend menggunakan HOC atau Middleware.
 3. **FEATURE (Item 18):** Implementasi export data ke Excel/PDF.
 
 ---
