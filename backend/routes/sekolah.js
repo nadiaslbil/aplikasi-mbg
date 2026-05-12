@@ -3,6 +3,7 @@ const router = express.Router();
 const { all, get, run } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
 const { requireRole, permissions } = require('../middleware/rbac');
+const { sekolahSchema, validate } = require('../validation/schemas');
 
 // Get all sekolah
 router.get('/', authenticateToken, async (req, res) => {
@@ -159,13 +160,9 @@ router.get('/:id', authenticateToken, async (req, res) => {
 });
 
 // Create sekolah
-router.post('/', authenticateToken, requireRole(permissions.sekolah.create), async (req, res) => {
+router.post('/', authenticateToken, requireRole(permissions.sekolah.create), validate(sekolahSchema), async (req, res) => {
   try {
     const { nama, alamat, latitude, longitude, kecamatan, kabupaten, provinsi, jumlah_siswa, kontak } = req.body;
-
-    if (!nama || !alamat || latitude === undefined || longitude === undefined || !kecamatan || !kabupaten || !provinsi) {
-      return res.status(400).json({ error: 'Data tidak lengkap' });
-    }
 
     const result = await run(
       `
@@ -186,7 +183,7 @@ router.post('/', authenticateToken, requireRole(permissions.sekolah.create), asy
 });
 
 // Update sekolah
-router.put('/:id', authenticateToken, requireRole(permissions.sekolah.update), async (req, res) => {
+router.put('/:id', authenticateToken, requireRole(permissions.sekolah.update), validate(sekolahSchema), async (req, res) => {
   try {
     const { nama, alamat, latitude, longitude, kecamatan, kabupaten, provinsi, jumlah_siswa, kontak, status } = req.body;
 

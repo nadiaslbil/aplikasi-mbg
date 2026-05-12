@@ -3,6 +3,7 @@ const router = express.Router();
 const { all, get, run } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
 const { requireRole, permissions } = require('../middleware/rbac');
+const { stokSchema, validate } = require('../validation/schemas');
 
 // Get all stok bahan
 router.get('/', authenticateToken, async (req, res) => {
@@ -60,13 +61,9 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Create stok
-router.post('/', authenticateToken, requireRole(permissions.stok.create), async (req, res) => {
+router.post('/', authenticateToken, requireRole(permissions.stok.create), validate(stokSchema), async (req, res) => {
   try {
     const { dapur_id, nama_bahan, jumlah, satuan, expired_date } = req.body;
-
-    if (!dapur_id || !nama_bahan || jumlah === undefined || !satuan || !expired_date) {
-      return res.status(400).json({ error: 'Data tidak lengkap' });
-    }
 
     const result = await run(
       `
@@ -87,7 +84,7 @@ router.post('/', authenticateToken, requireRole(permissions.stok.create), async 
 });
 
 // Update stok
-router.put('/:id', authenticateToken, requireRole(permissions.stok.update), async (req, res) => {
+router.put('/:id', authenticateToken, requireRole(permissions.stok.update), validate(stokSchema.partial()), async (req, res) => {
   try {
     const { nama_bahan, jumlah, satuan, expired_date } = req.body;
 

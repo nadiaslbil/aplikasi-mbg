@@ -3,6 +3,7 @@ const router = express.Router();
 const { all, get, run } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
 const { requireRole, permissions } = require('../middleware/rbac');
+const { dapurSchema, validate } = require('../validation/schemas');
 
 // Get all dapur supplier
 router.get('/', authenticateToken, async (req, res) => {
@@ -108,13 +109,9 @@ router.get('/:id/sekolah', authenticateToken, async (req, res) => {
 });
 
 // Create dapur
-router.post('/', authenticateToken, requireRole(permissions.dapur.create), async (req, res) => {
+router.post('/', authenticateToken, requireRole(permissions.dapur.create), validate(dapurSchema), async (req, res) => {
   try {
     const { nama, alamat, latitude, longitude, kecamatan, kabupaten, provinsi, kapasitas_harian, kontak, penanggung_jawab } = req.body;
-
-    if (!nama || !alamat || latitude === undefined || longitude === undefined || !kecamatan) {
-      return res.status(400).json({ error: 'Data tidak lengkap' });
-    }
 
     const result = await run(
       `
@@ -146,7 +143,7 @@ router.post('/', authenticateToken, requireRole(permissions.dapur.create), async
 });
 
 // Update dapur
-router.put('/:id', authenticateToken, requireRole([...permissions.dapur.update, ...permissions.dapur.updateOwn]), async (req, res) => {
+router.put('/:id', authenticateToken, requireRole([...permissions.dapur.update, ...permissions.dapur.updateOwn]), validate(dapurSchema), async (req, res) => {
   try {
     const { nama, alamat, latitude, longitude, kecamatan, kabupaten, provinsi, kapasitas_harian, kontak, penanggung_jawab, status } = req.body;
 

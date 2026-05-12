@@ -4,6 +4,7 @@ const bcrypt = require("bcryptjs");
 const { all, get, run } = require("../database");
 const { authenticateToken } = require("../middleware/auth");
 const { requireRole, permissions } = require("../middleware/rbac");
+const { userUpdateSchema, registerSchema, validate } = require("../validation/schemas");
 
 // List users (supports ?search= & ?role=)
 router.get("/", authenticateToken, requireRole(permissions.users.read), async (req, res) => {
@@ -32,13 +33,10 @@ router.get("/", authenticateToken, requireRole(permissions.users.read), async (r
   }
 });
 
-// Create user
-router.post("/", authenticateToken, requireRole(permissions.users.create), async (req, res) => {
+// Create user (re-using registerSchema logic)
+router.post("/", authenticateToken, requireRole(permissions.users.create), validate(registerSchema), async (req, res) => {
   try {
     const { nama, email, password, role, avatar, no_telp } = req.body;
-    if (!nama || !email || !password || !role) {
-      return res.status(400).json({ error: "Data tidak lengkap" });
-    }
 
     const existing = await get("SELECT id FROM users WHERE email = ?", [email]);
     if (existing) return res.status(409).json({ error: "Email sudah terdaftar" });
@@ -57,9 +55,9 @@ router.post("/", authenticateToken, requireRole(permissions.users.create), async
 });
 
 // Update user
-router.put("/:id", authenticateToken, requireRole(permissions.users.updateOwn), async (req, res) => {
+router.put("/:id", authenticateToken, requireRole(permissions.users.updateOwn), validate(userUpdateSchema), async (req, res) => {
   try {
-    const { nama, email, password, role, avatar, no_telp } = req.body;
+    const { nama, email, role, avatar, no_telp, password } = req.body;
     const { id } = req.params;
 
     const existing = await get("SELECT id, role FROM users WHERE id = ?", [id]);
@@ -72,10 +70,6 @@ router.put("/:id", authenticateToken, requireRole(permissions.users.updateOwn), 
       return res.status(403).json({ error: "Hanya Admin BGN yang bisa mengupdate user lain" });
     }
 
-    // Determine final role: 
-    // 1. If not admin_bgn updating self, keep existing role
-    // 2. If role is provided in body (usually by admin), use that
-    // 3. Fallback to existing role
     const finalRole = (req.user.role !== "admin_bgn" && isSelf) ? existing.role : (role || existing.role);
 
     if (password) {

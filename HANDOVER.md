@@ -1,38 +1,37 @@
 # 📦 HANDOVER DOKUMENTASI - MBG Distribution System
 
-> **Tanggal:** 11 Mei 2026 (UPDATED)
-> **Status:** Production Ready (Cloud-Native + CORS Fixed + Postgres Optimized)
+> **Tanggal:** 12 Mei 2026 (UPDATED)
+> **Status:** Production Ready (Knex.js Integrated + Unified Backend + UI Refined)
 > **Fokus:** Kabupaten Banjarnegara, Jawa Tengah
-> **Latest Update:** ✅ Personal Profile Management + ✅ Dynamic App Settings + ✅ User Profile Avatars & Phone
+> **Latest Update:** ✅ Knex.js Migration + ✅ Unified Entry Point + ✅ Dashboard UI Refactor
 
 ---
 
-## 📋 RINGKASAN SINGKAT (UPDATE 11 MEI 2026)
+## 📋 RINGKASAN SINGKAT (UPDATE 12 MEI 2026)
 
-Aplikasi ini telah mencapai tahap kematangan tinggi dengan penambahan fitur **Personal Profile Management** yang memungkinkan setiap pengguna mengelola informasi pribadi dan keamanan mereka secara mandiri. Hal ini melengkapi fitur **Dynamic Settings** dan perbaikan sistem identitas user sebelumnya.
+Aplikasi telah melewati tahap refaktorisasi besar pada sisi Backend untuk menjamin stabilitas database lintas platform (SQLite/Postgres) menggunakan **Knex.js**. Sisi Frontend juga telah diperbarui dengan layout dashboard yang lebih profesional dan minimalis, serta sinkronisasi branding yang menyeluruh hingga ke halaman login.
 
 ---
 
-## 🆕 PERBAIKAN & FITUR TERBARU (Update 11 Mei 2026)
+## 🆕 PERBAIKAN & FITUR TERBARU (Update 12 Mei 2026)
 
-### ✅ **Personal Profile Management**
-- **Self-Service Profile:** Setiap pengguna (Admin, Kurir, Supplier) dapat mengubah Nama, Nomor Telepon, dan Foto Profil mereka sendiri.
-- **Security Update:** Fitur ganti password mandiri dengan validasi kecocokan konfirmasi password.
-- **Integrated UI:** Navigasi profil terintegrasi langsung pada bagian identitas user di sidebar (bottom section) untuk akses yang lebih intuitif.
-- **Real-time Sync:** Perubahan data profil (nama/foto) langsung tersinkronisasi ke seluruh antarmuka aplikasi tanpa perlu login ulang melalui `AuthContext`.
+### ✅ **Backend Modernization (Knex.js Implementation)**
+- **SQL Transformation Fix:** Menghapus logika penggantian string manual yang berisiko. Knex.js kini menangani perbedaan dialek antara SQLite (Lokal) dan Postgres (Vercel) secara otomatis dan aman.
+- **Enhanced Security:** Proteksi SQL Injection yang lebih kuat melalui *parameterized queries* bawaan Knex.
+- **Clean Architecture:** Memulai migrasi rute API (seperti Auth) menggunakan Knex Query Builder yang lebih *maintainable*.
 
-### ✅ **Dynamic Application Settings** (Prev Update)
-- **Sistem Branding:** Nama aplikasi, logo, instansi, dan copyright dapat diubah langsung dari dashboard oleh Super Admin.
-- **Global Settings Context:** Perubahan pengaturan langsung diterapkan secara *real-time* ke seluruh UI aplikasi.
-- **Konfigurasi Peta:** Admin dapat mengatur koordinat pusat dan zoom peta secara dinamis.
+### ✅ **Unified Backend Architecture**
+- **Eliminate Duplication:** Menggabungkan logika `server.js` dan `api/index.js` menjadi arsitektur **Unified Entry Point**. Tidak ada lagi duplikasi logika login atau konfigurasi middleware.
+- **Local Dev Consistency:** `server.js` kini berfungsi sebagai wrapper minimalis, memastikan perilaku backend di lokal 100% identik dengan di produksi (Vercel).
 
-### ✅ **Enhanced User Profiles** (Prev Update)
-- **Avatar & No. Telp:** Penambahan kolom foto profil dan nomor telepon pada sistem user.
-- **Self-Update API:** Setiap user (termasuk Kurir & Supplier) kini dapat memperbarui data profil mereka sendiri.
+### ✅ **UI/UX Refinement (Map-Centric Dashboard)**
+- **Professional Map Layout:** Peta kini menjadi fokus utama dengan tinggi 70vh dan tampilan yang lebih bersih.
+- **Summary Statistics:** Menghapus tombol-tombol redundant dan menggantinya dengan baris statistik dinamis (Sekolah, Dapur, Kurir Aktif) di atas peta.
+- **Minimalist Design:** Menghapus banner deskripsi mencolok dan beralih ke desain yang lebih tenang dan lega sesuai standar dashboard modern.
 
-### ✅ **Incident Reporting Fix & Guidance**
-- **Pagination Fix:** Memperbaiki crash "This page couldn't load" yang disebabkan oleh format data sekolah terpaginasi.
-- **Smart Hints:** Menambahkan panduan teks baku Bahasa Indonesia saat memilih tipe insiden untuk memudahkan pelapor.
+### ✅ **Full Branding Synchronization**
+- **Dynamic Login Page:** Halaman login sekarang sepenuhnya sinkron dengan **Pengaturan Aplikasi** (Logo, Nama Aplikasi, Nama Instansi, dan Copyright) yang diatur melalui dashboard admin.
+- **Fallback Mechanism:** Sistem otomatis kembali ke icon default jika logo kustom gagal dimuat atau tidak tersedia.
 
 ---
 
@@ -40,18 +39,17 @@ Aplikasi ini telah mencapai tahap kematangan tinggi dengan penambahan fitur **Pe
 ...
 ├── backend/                          # Backend Serverless Function
 │   ├── api/
-│   │   └── index.js                  # Unified Entry Point
+│   │   └── index.js                  # Unified Entry Point (Main Logic)
 │   ├── routes/
-│   │   └── settings.js               # ✅ New: Settings API
-│   ├── migration-settings.js         # ✅ New: Settings Table Migration
-│   ├── migration-users-profile.js    # ✅ New: Users Table Update
+│   │   └── auth.js                   # ✅ Centralized Auth Logic (Knex)
+│   ├── database.js                   # ✅ Refactored: Knex.js Configuration
+│   ├── server.js                     # ✅ Minimal Local Runner
 ...
 ├── frontend/                         # Next.js 16 (Theta)
-│   ├── context/
-│   │   ├── AuthContext.tsx           # User Auth State
-│   │   └── SettingsContext.tsx       # ✅ New: Global App Settings State
+│   ├── components/
+│   │   └── BanjarnegaraMapImpl.tsx   # ✅ Refactored: Minimalist UI
 │   ├── app/
-│   │   └── dashboard/settings/       # ✅ New: Settings UI Page
+│   │   └── login/                    # ✅ Dynamic Branding Applied
 ...
 ```
 
@@ -61,8 +59,8 @@ Aplikasi ini telah mencapai tahap kematangan tinggi dengan penambahan fitur **Pe
 
 **Overall Progress: ~99% Complete** 🚀
 
-*(Sistem sudah sepenuhnya fungsional untuk operasional skala penuh di Banjarnegara)*
+*(Sistem sudah dioptimasi untuk skalabilitas dan keamanan tingkat lanjut)*
 
 ---
 
-**© 2026 - MBG Distribution System - Last Updated: 10 Mei 2026 (Branding & Profile Updates)**
+**© 2026 - MBG Distribution System - Last Updated: 12 Mei 2026 (Modernization & UI Refinement)**

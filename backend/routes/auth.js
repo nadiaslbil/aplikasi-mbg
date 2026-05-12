@@ -5,15 +5,12 @@ const jwt = require("jsonwebtoken");
 const { db } = require("../database"); // Use 'db' which is the knex instance
 const { authenticateToken } = require("../middleware/auth");
 const { requireRole } = require("../middleware/rbac");
+const { loginSchema, registerSchema, validate } = require("../validation/schemas");
 
 // Login
-router.post("/login", async (req, res) => {
+router.post("/login", validate(loginSchema), async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ error: "Email dan password wajib diisi" });
-    }
 
     const user = await db("users").where({ email }).first();
 
@@ -57,13 +54,9 @@ router.post("/login", async (req, res) => {
 });
 
 // Register
-router.post("/register", authenticateToken, requireRole(["admin_bgn"]), async (req, res) => {
+router.post("/register", authenticateToken, requireRole(["admin_bgn"]), validate(registerSchema), async (req, res) => {
   try {
     const { nama, email, password, role } = req.body;
-
-    if (!nama || !email || !password) {
-      return res.status(400).json({ error: "Nama, email, dan password wajib diisi" });
-    }
 
     const existingUser = await db("users").where({ email }).first();
 

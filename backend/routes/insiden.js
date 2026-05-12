@@ -3,6 +3,7 @@ const router = express.Router();
 const { all, get, run } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
 const { requireRole, permissions } = require('../middleware/rbac');
+const { insidenSchema, validate } = require('../validation/schemas');
 
 // Get all insiden
 router.get('/', authenticateToken, async (req, res) => {
@@ -91,13 +92,9 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Create insiden
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, validate(insidenSchema), async (req, res) => {
   try {
     const { sekolah_id, dapur_id, tipe, deskripsi, latitude, longitude, tanggal } = req.body;
-
-    if (!tipe || !deskripsi || !tanggal) {
-      return res.status(400).json({ error: 'Data tidak lengkap' });
-    }
 
     const result = await run(
       `
@@ -126,7 +123,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // Update insiden (tindak lanjut)
-router.put('/:id', authenticateToken, requireRole(permissions.insiden.update), async (req, res) => {
+router.put('/:id', authenticateToken, requireRole(permissions.insiden.update), validate(insidenSchema.partial()), async (req, res) => {
   try {
     const { status, ditangani_oleh, tindak_lanjut } = req.body;
 
