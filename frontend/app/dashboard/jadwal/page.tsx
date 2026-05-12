@@ -227,17 +227,9 @@ export default function JadwalPage() {
     reset();
   };
 
-  // Initialize dates for generation (next 7 days)
+  // Initialize dates for generation (Start empty per user request)
   const initGenerateDates = () => {
-    const dates = [];
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(tomorrow);
-      d.setDate(tomorrow.getDate() + i);
-      dates.push(d.toISOString().split('T')[0]);
-    }
-    setSelectedDates(dates);
+    setSelectedDates([]);
   };
 
   const handleOpenGenerateModal = () => {
