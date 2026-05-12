@@ -6,5 +6,5 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`✅ Backend server is running on http://localhost:${PORT}`);
-  console.log(`🚀 CORS allowed origin: ${process.env.FRONTEND_URL || 'https://aplikasi-mbg-theta.vercel.app'}`);
+  console.log(`🚀 CORS allowed origin: ${process.env.FRONTEND_URL || 'Configured in .env'}`);
 });

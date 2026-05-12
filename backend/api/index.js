@@ -8,12 +8,24 @@ const { uploadsDir } = require("../middleware/upload");
 dotenv.config();
 const app = express();
 
-// Jamin CORS dari Theta
-const allowedOrigin = process.env.FRONTEND_URL || "https://aplikasi-mbg-theta.vercel.app";
+// Jamin CORS dari Theta & Local
+const allowedOrigins = [
+  "https://aplikasi-mbg-theta.vercel.app",
+  "http://localhost:3000",
+  process.env.FRONTEND_URL,
+].filter(Boolean);
 
 app.use(
   cors({
-    origin: allowedOrigin,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === "development") {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   }),

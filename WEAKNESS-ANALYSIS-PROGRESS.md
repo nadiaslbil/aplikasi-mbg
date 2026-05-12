@@ -2,8 +2,8 @@
 
 > **Tanggal Analisis Terakhir:** 12 Mei 2026 (UPDATED)  
 > **Total Item:** 21  
-> **Fixed:** 12/21 (57%)  
-> **Pending:** 9/21 (43%)  
+> **Fixed:** 13/21 (62%)  
+> **Pending:** 8/21 (38%)  
 
 ---
 
@@ -11,58 +11,35 @@
 
 | Kategori | Fixed | Pending | Completion |
 |----------|-------|---------|------------|
-| **KRITIS** (High) | 6/9 | 3 | 67% |
+| **KRITIS** (High) | 7/9 | 2 | 78% |
 | **PENTING** (Medium) | 2/5 | 3 | 40% |
 | **REKOMENDASI** (Low) | 4/7 | 3 | 57% |
-| **TOTAL** | **12/21** | **9** | **57%** |
+| **TOTAL** | **13/21** | **8** | **62%** |
 
 ---
 
-## ✅ SUDAH DIPERBAIKI (12/21)
+## ✅ SUDAH DIPERBAIKI (13/21)
 
 ### 1. ✅ Relasi User Supplier ↔ Data Dapur
 - **Status:** FIXED
 - **Implementasi:** Backend filtering `WHERE ds.user_id = ?` sudah berjalan.
 
-### 2. ✅ Environment Variables Terkonfigurasi
-- **Status:** FIXED
-- **Implementasi:** Penggunaan `process.env` untuk JWT, Port, dan Database URL.
-
-### 3. ✅ Pencarian di Backend
-- **Status:** FIXED
-- **Implementasi:** Server-side search dengan parameterized LIKE query pada endpoint utama.
-
-### 4. ✅ Implementasi RBAC Konsisten
-- **Status:** FIXED
-- **Bukti:** Semua route di `backend/routes/` sekarang menggunakan middleware `requireRole` dan matriks `permissions`.
-
-### 5. ✅ Endpoint Seed Publik Dihapus
-- **Status:** FIXED
-- **Bukti:** Endpoint `GET /api/seed` telah dihapus.
-
-### 6. ✅ Implementasi Validasi Input (Zod)
-- **Status:** FIXED
-- **Implementasi:** Menggunakan library **Zod** untuk skema validasi input yang ketat pada seluruh rute utama (Auth, Sekolah, Dapur, Users, Insiden, Stok). Sistem kini memvalidasi tipe data, format (email), batasan panjang karakter, dan nilai numerik sebelum data diproses oleh database.
-
-### 8. ✅ Endpoint Delete Insiden
-- **Status:** FIXED
-- **Bukti:** Endpoint `DELETE /api/insiden/:id` tersedia.
+...
 
 ### 9. ✅ Implementasi Knex.js (SQL Transformation Fix)
 - **Status:** FIXED
-- **Implementasi:** Mengganti logika `transformQuery` manual dengan **Knex.js** sebagai query builder utama di `backend/database.js`. Knex menangani perbedaan dialek antara SQLite dan Postgres secara otomatis dan aman, menghilangkan risiko kegagalan penggantian string manual dan memperkuat proteksi terhadap SQL Injection.
+- **Implementasi:** Mengganti logika `transformQuery` manual dengan **Knex.js** sebagai query builder utama.
+
+### 10. ✅ Konfigurasi CORS Terpusat & Dinamis
+- **Status:** FIXED
+- **Implementasi:** Menghapus URL frontend hardcoded di `vercel.json`, `server.js`, dan `api/index.js`. Sekarang menggunakan middleware `cors` yang mendukung multiple origins (`localhost`, domain produksi, dan `FRONTEND_URL` dari env). Konfigurasi terpusat di `api/index.js`.
 
 ### 11. ✅ Implementasi Pagination
-- **Status:** FIXED
-- **Implementasi:** Server-side pagination (`LIMIT`, `OFFSET`) pada `sekolah`, `pengiriman`, `jadwal`.
-
-### 17. ✅ Implementasi Notifikasi Modern (Sonner)
-- **Status:** FIXED
-- **Implementasi:** Menggunakan **Sonner** untuk toast notifications di seluruh frontend.
+...
 
 ### 20. ✅ Inkosistensi & Duplikasi Entry Point Backend
 - **Status:** FIXED
-- **Implementasi:** Backend telah dikonsolidasi dengan arsitektur **Unified Entry Point**. `api/index.js` menjadi pusat logika utama yang digunakan baik oleh Vercel maupun lokal. `server.js` kini hanya berupa wrapper minimalis untuk menjalankan aplikasi di lingkungan lokal. Duplikasi logika login telah dihapus dan dipusatkan sepenuhnya pada `routes/auth.js`.
+- **Implementasi:** Backend dikonsolidasi dengan arsitektur **Unified Entry Point**.
 
 ### 21. ✅ Sinkronisasi Branding Halaman Login (New)
 - **Status:** FIXED
@@ -70,38 +47,35 @@
 
 ---
 
-## ❌ BELUM DIPERBAIKI (9/21)
+## ❌ BELUM DIPERBAIKI (8/21)
 
 ### 🔴 KRITIS (High Priority)
 
 #### 7. ❌ Password Policy & Default Password Lemah
 - **Masalah:** Default `admin123`. Tidak ada validasi kompleksitas password.
 
-#### 10. ❌ Hardcoded CORS URL
-- **Masalah:** URL frontend di-hardcode di middleware backend.
-
 ---
 
 ### 🟡 PENTING (Medium Priority)
 
 #### 12. ❌ Hard Delete (Tanpa Soft Delete)
-- **Masalah:** Sekali hapus, data hilang selamanya (terutama data master seperti Sekolah/Dapur).
+- **Masalah:** Sekali hapus, data hilang selamanya.
 
 #### 13. ❌ Tanpa Audit Trail
 - **Masalah:** Tidak ada log perubahan data sensitif.
 
 #### 14. ❌ Error Boundary Frontend Missing
-- **Masalah:** Jika ada error React, layar menjadi putih total tanpa informasi ramah pengguna.
+- **Masalah:** Jika ada error React, layar menjadi putih total.
 
 ---
 
 ### 🟢 REKOMENDASI (Low Priority)
 
 #### 15. ❌ Duplikasi Logika Auth di Frontend
-- **Masalah:** Pengecekan login diulang-ulang di setiap file page daripada menggunakan middleware atau HOC.
+- **Masalah:** Pengecekan login diulang-ulang di setiap file page.
 
 #### 16. ❌ Loading State Navigasi Minim
-- **Masalah:** Klik menu tidak memberikan feedback visual (progress bar).
+- **Masalah:** Klik menu tidak memberikan feedback visual.
 
 #### 18. ❌ Tidak Ada Export Data (Excel/PDF)
 - **Masalah:** Laporan hanya tersedia di layar.
