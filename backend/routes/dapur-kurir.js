@@ -14,13 +14,7 @@ router.get('/', authenticateToken, async (req, res) => {
 
     let query = db('dapur_kurir as dk')
       .join('dapur_supplier as ds', 'dk.dapur_id', 'ds.id')
-      .join('users as u', 'dk.kurir_id', 'u.id')
-      .select(
-        'dk.*', 
-        'ds.nama as dapur_nama', 
-        'u.nama as kurir_nama', 
-        'u.email as kurir_email'
-      );
+      .join('users as u', 'dk.kurir_id', 'u.id');
 
     if (dapur_id) {
       query = query.where('dk.dapur_id', dapur_id);
@@ -47,6 +41,12 @@ router.get('/', authenticateToken, async (req, res) => {
     const total = parseInt(totalCount?.total || 0);
 
     const rows = await query
+      .select(
+        'dk.*', 
+        'ds.nama as dapur_nama', 
+        'u.nama as kurir_nama', 
+        'u.email as kurir_email'
+      )
       .orderBy('dk.status', 'asc') // 'aktif' usually comes before 'nonaktif' alphabetically, but let's be safe
       .orderBy('dk.created_at', 'desc')
       .limit(limit)

@@ -14,14 +14,7 @@ router.get('/', authenticateToken, async (req, res) => {
 
     let query = db('dapur_sekolah as dsk')
       .join('dapur_supplier as ds', 'dsk.dapur_id', 'ds.id')
-      .join('sekolah as s', 'dsk.sekolah_id', 's.id')
-      .select(
-        'dsk.*',
-        'ds.nama as dapur_nama',
-        's.nama as sekolah_nama',
-        's.alamat as sekolah_alamat',
-        's.kecamatan as sekolah_kecamatan'
-      );
+      .join('sekolah as s', 'dsk.sekolah_id', 's.id');
 
     if (dapur_id) {
       query = query.where('dsk.dapur_id', dapur_id);
@@ -48,6 +41,13 @@ router.get('/', authenticateToken, async (req, res) => {
     const total = parseInt(totalCount?.total || 0);
 
     const rows = await query
+      .select(
+        'dsk.*',
+        'ds.nama as dapur_nama',
+        's.nama as sekolah_nama',
+        's.alamat as sekolah_alamat',
+        's.kecamatan as sekolah_kecamatan'
+      )
       .orderBy('dsk.status', 'asc')
       .orderBy('dsk.id', 'desc')
       .limit(limit)
