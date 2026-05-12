@@ -217,11 +217,23 @@ router.delete('/:id', authenticateToken, requireRole(permissions.sekolah.delete)
       .where({ id: req.params.id })
       .update({ deleted_at: db.fn.now() });
 
+    // Log audit
+    await logAudit({
+      action: 'DELETE',
+      table_name: 'sekolah',
+      record_id: req.params.id,
+      old_values: existing,
+      req
+    });
+
     res.json({ message: 'Sekolah berhasil dihapus' });
   } catch (error) {
     console.error('Delete sekolah error:', error);
     res.status(500).json({ error: 'Terjadi kesalahan server' });
   }
 });
+
+module.exports = router;
+;
 
 module.exports = router;

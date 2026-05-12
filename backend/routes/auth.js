@@ -6,6 +6,7 @@ const { db } = require("../database"); // Use 'db' which is the knex instance
 const { authenticateToken } = require("../middleware/auth");
 const { requireRole } = require("../middleware/rbac");
 const { loginSchema, registerSchema, validate } = require("../validation/schemas");
+const { logAudit } = require("../middleware/audit");
 
 // Login
 router.post("/login", validate(loginSchema), async (req, res) => {
@@ -34,6 +35,13 @@ router.post("/login", validate(loginSchema), async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "24h" },
     );
+
+    // Log login action
+    await logAudit({
+      user_id: user.id,
+      action: 'LOGIN',
+      req
+    });
 
     res.json({
       message: "Login berhasil",
