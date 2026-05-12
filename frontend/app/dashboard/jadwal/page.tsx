@@ -76,6 +76,7 @@ export default function JadwalPage() {
   const [filteredKurirList, setFilteredKurirList] = useState<Kurir[]>([]);
   const [selectedDapurId, setSelectedDapurId] = useState<number | null>(null);
   const [filterTanggal, setFilterTanggal] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
   const [showDateModal, setShowDateModal] = useState(false);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [generating, setGenerating] = useState(false);
