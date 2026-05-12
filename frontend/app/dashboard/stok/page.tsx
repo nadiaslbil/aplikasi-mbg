@@ -57,10 +57,8 @@ export default function StokPage() {
   const { register, handleSubmit, reset, setValue } = useForm<StokForm>();
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!user) { router.push('/login'); return; }
     fetchAll();
-  }, [user, authLoading, showExpiredOnly]);
+  }, [showExpiredOnly]);
 
   // Auto-set dapur_id untuk supplier
   useEffect(() => {

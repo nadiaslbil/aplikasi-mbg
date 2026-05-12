@@ -84,10 +84,8 @@ export default function KurirPage() {
   const [viewFoto, setViewFoto] = useState<string | null>(null);
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!user) { router.push('/login'); return; }
     fetchTugas();
-  }, [user, authLoading, filterStatus]);
+  }, [filterStatus]);
 
   const activeTask = useMemo(
     () => tugasList.find((t) => t.status === 'dalam_perjalanan') || null,

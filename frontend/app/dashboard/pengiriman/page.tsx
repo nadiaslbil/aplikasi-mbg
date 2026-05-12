@@ -74,10 +74,8 @@ export default function PengirimanPage() {
   const [viewFoto, setViewFoto] = useState<string | null>(null);
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!user) { router.push('/login'); return; }
     fetchPengiriman();
-  }, [user, authLoading, filterStatus]);
+  }, [filterStatus]);
 
   const normalizePengirimanData = (payload: unknown): Pengiriman[] => {
     if (Array.isArray(payload)) return payload as Pengiriman[];

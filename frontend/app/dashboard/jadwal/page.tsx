@@ -86,10 +86,8 @@ export default function JadwalPage() {
   const isAdmin = user?.role === 'admin_bgn' || user?.role === 'admin_daerah';
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!user) { router.push('/login'); return; }
     fetchAll();
-  }, [user, authLoading, filterTanggal, filterStatus]);
+  }, [filterTanggal, filterStatus]);
 
   const normalizeArray = <T,>(payload: unknown): T[] => {
     if (Array.isArray(payload)) return payload as T[];

@@ -27,18 +27,15 @@ export default function ProfilePage() {
   const password = watch("password");
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!user) {
-      router.push("/login");
-      return;
+    if (user) {
+      reset({
+        nama: user.nama,
+        email: user.email,
+        no_telp: user.no_telp || "",
+        avatar: user.avatar || "",
+      });
     }
-    reset({
-      nama: user.nama,
-      email: user.email,
-      no_telp: user.no_telp || "",
-      avatar: user.avatar || "",
-    });
-  }, [user, authLoading, reset, router]);
+  }, [user, reset]);
 
   const onSubmit = async (data: ProfileForm) => {
     if (data.password && data.password !== data.confirmPassword) {
@@ -65,8 +62,6 @@ export default function ProfilePage() {
       setSaving(false);
     }
   };
-
-  if (authLoading) return null;
 
   return (
     <AdminLayout

@@ -41,18 +41,13 @@ export default function SupplierDashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!user) {
-      router.push('/login');
-      return;
-    }
     // Redirect non-supplier
-    if (user.role !== 'supplier') {
+    if (user && user.role !== 'supplier') {
       router.replace('/dashboard');
       return;
     }
     fetchAll();
-  }, [user, authLoading]);
+  }, [user, router]);
 
   const fetchAll = async () => {
     try {

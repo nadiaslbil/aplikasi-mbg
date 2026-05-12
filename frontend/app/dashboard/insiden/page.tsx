@@ -94,10 +94,8 @@ export default function InsidenPage() {
   const [updateStatus, setUpdateStatus] = useState('');
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!user) { router.push('/login'); return; }
     fetchAll();
-  }, [user, authLoading, filterStatus]);
+  }, [filterStatus]);
 
   const fetchAll = async () => {
     try {

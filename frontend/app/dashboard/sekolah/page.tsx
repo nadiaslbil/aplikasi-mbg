@@ -68,13 +68,8 @@ export default function SekolahPage() {
   const { register, handleSubmit, reset, setValue } = useForm<SekolahForm>();
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!user) {
-      router.push('/login');
-      return;
-    }
     fetchSekolah();
-  }, [user, authLoading, page, search]);
+  }, [page, search]);
 
   const fetchSekolah = async () => {
     try {

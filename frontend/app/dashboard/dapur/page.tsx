@@ -67,10 +67,8 @@ export default function DapurPage() {
   const { register, handleSubmit, reset, setValue } = useForm<DapurForm>();
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!user) { router.push('/login'); return; }
     fetchDapur();
-  }, [user, authLoading]);
+  }, []);
 
   const fetchDapur = async () => {
     try {

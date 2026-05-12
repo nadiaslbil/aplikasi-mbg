@@ -54,13 +54,8 @@ export default function UsersPage() {
   const { register, handleSubmit, reset } = useForm<UserForm>();
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!user) {
-      router.push("/login");
-      return;
-    }
     fetchUsers();
-  }, [user, authLoading]);
+  }, []);
 
   const fetchUsers = async () => {
     try {

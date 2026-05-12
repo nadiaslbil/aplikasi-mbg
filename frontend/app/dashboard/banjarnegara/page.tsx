@@ -8,27 +8,6 @@ import BanjarnegaraMap from '@/components/BanjarnegaraMap';
 import { MapPin } from 'lucide-react';
 
 export default function BanjarnegaraPage() {
-  const { user, isLoading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (isLoading) return;
-    if (!user) {
-      router.push('/login');
-    }
-  }, [user, isLoading, router]);
-
-  if (isLoading || !user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="text-sm text-zinc-500 mt-3">Memuat...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <AdminLayout
       currentPage="/dashboard/banjarnegara"
