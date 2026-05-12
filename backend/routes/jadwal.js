@@ -96,30 +96,27 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
-// Generate Weekly Schedules
+// Generate Schedules for selected dates
 router.post('/generate-weekly', authenticateToken, requireRole(permissions.jadwal.create), async (req, res) => {
   const trx = await db.transaction();
   try {
-    const today = new Date();
-    const startDate = new Date(today);
-    startDate.setDate(today.getDate() + 1); // Start from tomorrow
+    const { selected_dates } = req.body;
     
-    const endDate = new Date(startDate);
-    endDate.setDate(startDate.getDate() + 6); // 7 days range
-
-    const dateRange = [];
-    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-      dateRange.push(new Date(d).toISOString().split('T')[0]);
+    if (!selected_dates || !Array.isArray(selected_dates) || selected_dates.length === 0) {
+      return res.status(400).json({ error: 'Silakan pilih minimal satu tanggal untuk men-generate jadwal' });
     }
 
+    const dateRange = selected_dates.sort();
     const dayNames = ['minggu', 'senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu'];
 
-    // 1. Fetch relations
+    // 1. Fetch only ACTIVE relations, ACTIVE kitchens, and ACTIVE schools
     const relations = await trx('dapur_sekolah as dsk')
       .join('dapur_supplier as ds', 'dsk.dapur_id', 'ds.id')
       .join('sekolah as s', 'dsk.sekolah_id', 's.id')
       .select('dsk.*', 'ds.nama as dapur_nama', 'ds.kapasitas_harian', 's.nama as sekolah_nama')
       .where('dsk.status', 'aktif')
+      .where('ds.status', 'aktif')
+      .where('s.status', 'aktif')
       .whereNull('ds.deleted_at')
       .whereNull('s.deleted_at');
 
@@ -129,16 +126,12 @@ router.post('/generate-weekly', authenticateToken, requireRole(permissions.jadwa
       .where('dk.status', 'aktif')
       .whereNull('u.deleted_at');
 
-    // 2. Fetch existing schedules to prevent dups
+    // 2. Fetch existing schedules for the selected dates to prevent duplicates
     const existingSchedules = await trx('jadwal_distribusi')
-      .where('tanggal', '>=', dateRange[0])
-      .where('tanggal', '<=', dateRange[dateRange.length - 1])
+      .whereIn('tanggal', dateRange)
       .whereNull('deleted_at');
 
     const existingMap = new Set(existingSchedules.map(s => `${s.tanggal}_${s.dapur_id}_${s.sekolah_id}`));
-
-    // Helper for Round Robin
-    const courierCounters = {}; // { kitchenId_date: index }
 
     const results = {
       created: 0,
@@ -149,10 +142,11 @@ router.post('/generate-weekly', authenticateToken, requireRole(permissions.jadwa
     };
 
     const capacityTracker = {}; // { kitchenId_date: current_load }
+    const courierCounters = {}; // { kitchenId_date: index }
 
     for (const date of dateRange) {
       const dayName = dayNames[new Date(date).getDay()];
-      results.summary[dayName] = [];
+      results.summary[date] = []; // Use date as key instead of day name for clarity
 
       for (const rel of relations) {
         // Match day
@@ -161,6 +155,7 @@ router.post('/generate-weekly', authenticateToken, requireRole(permissions.jadwa
           hariKirim = typeof rel.hari_kirim === 'string' ? JSON.parse(rel.hari_kirim) : rel.hari_kirim;
         } catch (e) {
           console.error('JSON Parse error for hari_kirim:', rel.hari_kirim);
+          continue;
         }
 
         if (!hariKirim.includes(dayName)) continue;
@@ -182,7 +177,6 @@ router.post('/generate-weekly', authenticateToken, requireRole(permissions.jadwa
 
         // Round Robin Courier Assignment
         const kitchenCouriers = kurirRelations.filter(k => k.dapur_id === rel.dapur_id);
-        let assignedKurirId = null;
         let kurirNama = 'Belum ada';
 
         if (kitchenCouriers.length > 0) {
@@ -190,7 +184,6 @@ router.post('/generate-weekly', authenticateToken, requireRole(permissions.jadwa
           courierCounters[counterKey] = courierCounters[counterKey] !== undefined ? courierCounters[counterKey] : 0;
           const kurirIndex = courierCounters[counterKey] % kitchenCouriers.length;
           const assigned = kitchenCouriers[kurirIndex];
-          assignedKurirId = assigned.kurir_id;
           kurirNama = assigned.kurir_nama;
           courierCounters[counterKey]++;
         }
@@ -206,15 +199,8 @@ router.post('/generate-weekly', authenticateToken, requireRole(permissions.jadwa
 
         const newId = typeof id === 'object' ? id.id : id;
 
-        // If we have a kurir, we should ideally link it. 
-        // Note: our table doesn't have kurir_id directly but we link it via pengiriman usually.
-        // HOWEVER, based on front-end code, the user expects to see kurir_nama in jadwal list.
-        // Let's check if the 'jadwal_distribusi' table has a kurir_id column or if it's dynamic.
-        // (Research: the previous GET route joins pengiriman and dapur_kurir to get kurir_nama).
-        // For a more professional approach, let's keep it simple: the dashboard query already finds a kurir.
-
         results.created++;
-        results.summary[dayName].push({
+        results.summary[date].push({
           id: newId,
           dapur: rel.dapur_nama,
           sekolah: rel.sekolah_nama,
@@ -229,17 +215,17 @@ router.post('/generate-weekly', authenticateToken, requireRole(permissions.jadwa
     await trx.commit();
 
     await logAudit({
-      action: 'GENERATE_WEEKLY',
+      action: 'GENERATE_BULK',
       table_name: 'jadwal_distribusi',
       record_id: 0,
-      new_values: { range: results.date_range, count: results.created },
+      new_values: { dates: dateRange, count: results.created },
       req
     });
 
     res.json(results);
   } catch (error) {
     await trx.rollback();
-    console.error('Generate weekly error:', error);
+    console.error('Generate bulk error:', error);
     res.status(500).json({ error: 'Gagal men-generate jadwal: ' + error.message });
   }
 });

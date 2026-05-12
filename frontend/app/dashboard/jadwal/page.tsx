@@ -76,7 +76,8 @@ export default function JadwalPage() {
   const [filteredKurirList, setFilteredKurirList] = useState<Kurir[]>([]);
   const [selectedDapurId, setSelectedDapurId] = useState<number | null>(null);
   const [filterTanggal, setFilterTanggal] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
+  const [showDateModal, setShowDateModal] = useState(false);
+  const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [generating, setGenerating] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [generateResult, setGenerateResult] = useState<any>(null);
@@ -85,159 +86,52 @@ export default function JadwalPage() {
   const { register, handleSubmit, reset, setValue, getValues } = useForm<JadwalForm>();
   const isAdmin = user?.role === 'admin_bgn' || user?.role === 'admin_daerah';
 
-  useEffect(() => {
-    fetchAll();
-  }, [filterTanggal, filterStatus]);
-
-  const normalizeArray = <T,>(payload: unknown): T[] => {
-    if (Array.isArray(payload)) return payload as T[];
-    if (payload && typeof payload === 'object') {
-      const record = payload as Record<string, unknown>;
-      if (Array.isArray(record.data)) return record.data as T[];
-      if (Array.isArray(record.items)) return record.items as T[];
-      if (Array.isArray(record.results)) return record.results as T[];
+  // Initialize dates for generation (next 7 days)
+  const initGenerateDates = () => {
+    const dates = [];
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(tomorrow);
+      d.setDate(tomorrow.getDate() + i);
+      dates.push(d.toISOString().split('T')[0]);
     }
-    return [];
+    setSelectedDates(dates);
   };
 
-  const fetchAll = async () => {
-    try {
-      const params: any = {};
-      if (filterTanggal) params.tanggal = filterTanggal;
-      if (filterStatus) params.status = filterStatus;
-      
-      const fetchPromises: Promise<any>[] = [
-        api.get('/jadwal', { params }),
-        api.get('/dapur'),
-        api.get('/sekolah'),
-      ];
-
-      // Only fetch kurir list if user has permission (admin roles)
-      if (isAdmin) {
-        fetchPromises.push(api.get('/kurir'));
-      } else {
-        fetchPromises.push(Promise.resolve({ data: [] }));
-      }
-
-      const [jadwalRes, dapurRes, sekolahRes, kurirRes] = await Promise.all(fetchPromises);
-      const jadwalData = normalizeArray<Jadwal>(jadwalRes.data);
-      const dapurData = normalizeArray<Dapur>(dapurRes.data);
-      const sekolahData = normalizeArray<Sekolah>(sekolahRes.data);
-      const kurirData = normalizeArray<Kurir>(kurirRes.data);
-
-      setJadwalList(jadwalData);
-      setDapurList(dapurData);
-      setSekolahList(sekolahData);
-      setKurirList(kurirData);
-      setFilteredSekolahList(sekolahData);
-      setFilteredKurirList(isAdmin ? kurirData : []);
-    } catch (error) { console.error('Error fetching data:', error); }
-    finally { setLoading(false); }
-  };
-
-  const fetchRelatedByDapur = useCallback(async (dapurId: number) => {
-    try {
-      const sekolahRes = await api.get(`/dapur/${dapurId}/sekolah`);
-      const sekolahData = normalizeArray<Sekolah>(sekolahRes.data);
-      setFilteredSekolahList(sekolahData);
-
-      const currentSekolahId = getValues('sekolah_id');
-      const sekolahValid = sekolahData.some((s: Sekolah) => s.id === currentSekolahId);
-      if (!sekolahValid) {
-        setValue('sekolah_id', sekolahData[0]?.id || 0);
-      }
-
-      if (isAdmin) {
-        const dapurKurirRes = await api.get('/dapur-kurir', { params: { dapur_id: dapurId } });
-        const dapurKurirData = normalizeArray<DapurKurirRelation>(dapurKurirRes.data);
-        const kurirIds = new Set(dapurKurirData.map((r) => r.kurir_id));
-        const mappedKurir = kurirList.filter((k) => kurirIds.has(k.id));
-        setFilteredKurirList(mappedKurir);
-
-        const currentKurirId = getValues('kurir_id');
-        const kurirValid = mappedKurir.some((k) => k.id === currentKurirId);
-        if (!kurirValid) {
-          setValue('kurir_id', 0);
-        }
-      } else {
-        setFilteredKurirList([]);
-      }
-    } catch (error) {
-      console.error('Error fetching related dapur data:', error);
-      setFilteredSekolahList([]);
-      setFilteredKurirList([]);
-    }
-  }, [getValues, isAdmin, kurirList, setValue]);
-
-  useEffect(() => {
-    if (!showForm || !selectedDapurId) return;
-    fetchRelatedByDapur(selectedDapurId);
-  }, [showForm, selectedDapurId, fetchRelatedByDapur]);
-
-  const onSubmit = async (data: JadwalForm) => {
-    try {
-      const payload = { ...data, kurir_id: data.kurir_id === 0 ? undefined : data.kurir_id };
-      if (editingId) {
-        await api.put(`/jadwal/${editingId}`, payload);
-        toast.success('Jadwal berhasil diupdate');
-      } else {
-        await api.post('/jadwal', payload);
-        toast.success('Jadwal berhasil ditambahkan');
-      }
-      fetchAll();
-      handleCloseForm();
-    } catch (error: any) { toast.error(error.response?.data?.error || 'Terjadi kesalahan'); }
-  };
-
-  const handleEdit = (jadwal: Jadwal) => {
-    setEditingId(jadwal.id);
-    setSelectedDapurId(jadwal.dapur_id);
-    reset({
-      dapur_id: jadwal.dapur_id,
-      sekolah_id: jadwal.sekolah_id,
-      tanggal: jadwal.tanggal,
-      waktu_kirim: jadwal.waktu_kirim,
-      jumlah_porsi: jadwal.jumlah_porsi,
-      catatan: jadwal.catatan,
-      kurir_id: 0,
-    });
-    setShowForm(true);
-  };
-
-  const handleDelete = async (id: number) => {
-    if (!confirm('Yakin ingin menghapus jadwal ini?')) return;
-    try {
-      await api.delete(`/jadwal/${id}`);
-      toast.success('Jadwal berhasil dihapus');
-      fetchAll();
-    }
-    catch (error: any) { toast.error(error.response?.data?.error || 'Terjadi kesalahan'); }
-  };
-
-  const handleCloseForm = () => {
-    setShowForm(false);
-    setEditingId(null);
-    setSelectedDapurId(null);
-    setFilteredSekolahList(sekolahList);
-    setFilteredKurirList(isAdmin ? kurirList : []);
-    reset();
+  const handleOpenGenerateModal = () => {
+    initGenerateDates();
+    setShowDateModal(true);
   };
 
   const handleGenerateWeekly = async () => {
+    if (selectedDates.length === 0) {
+      toast.error('Silakan pilih minimal satu tanggal');
+      return;
+    }
+
     try {
       setGenerating(true);
       const response = await api.post('/jadwal/generate-weekly', {
+        selected_dates: selectedDates,
         auto_assign_kurir: true
       });
       setGenerateResult(response.data);
+      setShowDateModal(false);
       setShowGenerateModal(true);
       fetchAll(); // Refresh jadwal
     } catch (error: any) {
-      const errorMsg = error.response?.data?.error || 'Gagal generate jadwal. Pastikan penugasan sekolah ke dapur dan kurir ke dapur sudah dibuat.';
+      const errorMsg = error.response?.data?.error || 'Gagal generate jadwal.';
       toast.error(errorMsg);
     } finally {
       setGenerating(false);
     }
+  };
+
+  const toggleDate = (date: string) => {
+    setSelectedDates(prev => 
+      prev.includes(date) ? prev.filter(d => d !== date) : [...prev, date].sort()
+    );
   };
 
   const handleStartDelivery = async (jadwalId: number, kurirId?: number) => {
@@ -290,12 +184,12 @@ export default function JadwalPage() {
         )}
         {canCreateJadwal && (
           <button 
-            onClick={handleGenerateWeekly} 
+            onClick={handleOpenGenerateModal} 
             disabled={generating}
             className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 font-medium transition-colors"
           >
             <Zap size={16} />
-            {generating ? 'Generating...' : 'Generate Jadwal Mingguan'}
+            {generating ? 'Generating...' : 'Generate Jadwal'}
           </button>
         )}
         
@@ -505,6 +399,73 @@ export default function JadwalPage() {
         </div>
       </div>
 
+      {/* Modal Pilih Tanggal */}
+      {showDateModal && (
+        <div className="fixed inset-0 bg-gray-900/30 backdrop-blur-sm flex items-center justify-center z-[2000] p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full relative z-[2100] animate-fadeIn">
+            <div className="flex items-center justify-between p-6 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">Pilih Tanggal Generate</h2>
+                  <p className="text-xs text-gray-500">Jadwal akan dibuat untuk sekolah/dapur aktif saja</p>
+                </div>
+              </div>
+              <button onClick={() => setShowDateModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                <CloseIcon className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            
+            <div className="p-6">
+              <div className="space-y-2 max-h-60 overflow-y-auto mb-4 p-1">
+                {selectedDates.map(date => (
+                  <div key={date} className="flex items-center justify-between bg-zinc-50 px-3 py-2 rounded-lg border border-zinc-100">
+                    <span className="text-sm font-medium text-zinc-700">
+                      {new Date(date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}
+                    </span>
+                    <button onClick={() => toggleDate(date)} className="text-red-500 hover:text-red-700 p-1">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+                {selectedDates.length === 0 && (
+                  <p className="text-sm text-center text-zinc-400 py-4">Belum ada tanggal dipilih</p>
+                )}
+              </div>
+
+              <div className="flex gap-2 mb-6">
+                <input 
+                  type="date" 
+                  className="input text-sm" 
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      toggleDate(e.target.value);
+                      e.target.value = '';
+                    }
+                  }}
+                />
+                <div className="bg-zinc-100 text-zinc-500 px-3 py-2 rounded-lg text-xs flex items-center">
+                  Pilih tanggal di kiri untuk menambah
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button onClick={() => setShowDateModal(false)} className="flex-1 btn-secondary">Batal</button>
+                <button 
+                  onClick={handleGenerateWeekly} 
+                  disabled={generating || selectedDates.length === 0}
+                  className="flex-1 btn-primary"
+                >
+                  {generating ? 'Memproses...' : `Generate (${selectedDates.length} Hari)`}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal Hasil Generate */}
       {showGenerateModal && generateResult && (
         <div className="fixed inset-0 bg-gray-900/30 backdrop-blur-sm flex items-center justify-center z-[2000] p-4 overflow-y-auto">
@@ -565,10 +526,12 @@ export default function JadwalPage() {
               <div>
                 <h3 className="font-semibold text-gray-900 mb-3">Detail Jadwal per Hari</h3>
                 <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {Object.entries(generateResult.summary || {}).map(([day, schedules]: [string, any]) => (
-                    <div key={day} className="border border-gray-200 rounded-lg overflow-hidden">
+                  {Object.entries(generateResult.summary || {}).map(([date, schedules]: [string, any]) => (
+                    <div key={date} className="border border-gray-200 rounded-lg overflow-hidden">
                       <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
-                        <h4 className="font-semibold text-gray-900 capitalize">{day} ({schedules.length} jadwal)</h4>
+                        <h4 className="font-semibold text-gray-900">
+                          {new Date(date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} ({schedules.length} jadwal)
+                        </h4>
                       </div>
                       <div className="divide-y divide-gray-100">
                         {(schedules as any[]).map((s: any) => (
