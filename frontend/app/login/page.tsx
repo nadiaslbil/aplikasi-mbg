@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { useSettings } from '@/context/SettingsContext';
 import api from '@/lib/api';
+import { API_URL } from '@/lib/config';
 import { useForm } from 'react-hook-form';
 import { Package, Loader2 } from 'lucide-react';
 
@@ -15,9 +17,18 @@ interface LoginForm {
 export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [logoError, setLogoError] = useState(false);
   const { login, user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { settings, loading: settingsLoading } = useSettings();
   const router = useRouter();
   const { register, handleSubmit } = useForm<LoginForm>();
+
+  // Helper to get logo URL
+  const getLogoUrl = (logoPath: string) => {
+    if (!logoPath) return null;
+    if (logoPath.startsWith('http')) return logoPath;
+    return `${API_URL}${logoPath.startsWith('/') ? '' : '/'}${logoPath}`;
+  };
 
   useEffect(() => {
     if (authLoading) return;
@@ -65,11 +76,20 @@ export default function LoginPage() {
       <div className="relative max-w-md w-full">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-sm rounded-2xl mb-4 border border-white/10">
-            <Package size={32} className="text-white" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-sm rounded-2xl mb-4 border border-white/10 overflow-hidden">
+            {settings.app_logo && !logoError ? (
+              <img 
+                src={getLogoUrl(settings.app_logo) || ''} 
+                alt="Logo" 
+                className="w-full h-full object-contain p-2"
+                onError={() => setLogoError(true)}
+              />
+            ) : (
+              <Package size={32} className="text-white" />
+            )}
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">MBG Distribution</h1>
-          <p className="text-blue-200/70 mt-1 text-sm">Sistem Informasi Distribusi Makanan Bergizi Gratis</p>
+          <h1 className="text-2xl font-bold text-white tracking-tight">{settings.app_name || 'MBG Distribution'}</h1>
+          <p className="text-blue-200/70 mt-1 text-sm">{settings.org_name || 'Sistem Informasi Distribusi Makanan Bergizi Gratis'}</p>
         </div>
 
         {/* Login Card */}
@@ -124,7 +144,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <p className="text-center text-xs text-zinc-500/50 mt-6">
-          &copy; 2026 MBG Distribution System. All rights reserved.
+          {settings.app_copyright || `© ${new Date().getFullYear()} MBG Distribution System. All rights reserved.`}
         </p>
       </div>
     </div>
