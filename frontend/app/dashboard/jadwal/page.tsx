@@ -540,9 +540,26 @@ export default function JadwalPage() {
                 </div>
                 <div className="bg-blue-50 rounded-lg p-4 col-span-2 md:col-span-1">
                   <p className="text-sm text-blue-600">Total Jadwal</p>
-                  <p className="text-2xl font-bold text-blue-700">{generateResult.jadwal?.length || 0}</p>
+                  <p className="text-2xl font-bold text-blue-700">
+                    {Object.values(generateResult.summary || {}).reduce((acc: number, val: any) => acc + val.length, 0)}
+                  </p>
                 </div>
               </div>
+
+              {/* Warnings Section */}
+              {generateResult.warnings && generateResult.warnings.length > 0 && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2 text-red-700">
+                    <AlertTriangle size={18} />
+                    <h4 className="font-semibold">Peringatan Kapasitas</h4>
+                  </div>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-red-600">
+                    {generateResult.warnings.map((w: string, idx: number) => (
+                      <li key={idx}>{w}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               {/* Schedule by Day */}
               <div>
