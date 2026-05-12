@@ -462,6 +462,17 @@ export default function AssignKurirPage() {
               Prev
             </button>
             <div className="flex items-center gap-1">
+              {visiblePages[0] > 1 && (
+                <>
+                  <button
+                    onClick={() => setPage(1)}
+                    className="w-8 h-8 flex items-center justify-center rounded text-sm hover:bg-zinc-100 text-zinc-600 transition-colors"
+                  >
+                    1
+                  </button>
+                  {visiblePages[0] > 2 && <span className="text-zinc-400 px-0.5">...</span>}
+                </>
+              )}
               {visiblePages.map((pageNum) => (
                 <button
                   key={pageNum}
@@ -475,6 +486,17 @@ export default function AssignKurirPage() {
                   {pageNum}
                 </button>
               ))}
+              {visiblePages[visiblePages.length - 1] < totalPages && (
+                <>
+                  {visiblePages[visiblePages.length - 1] < totalPages - 1 && <span className="text-zinc-400 px-0.5">...</span>}
+                  <button
+                    onClick={() => setPage(totalPages)}
+                    className="w-8 h-8 flex items-center justify-center rounded text-sm hover:bg-zinc-100 text-zinc-600 transition-colors"
+                  >
+                    {totalPages}
+                  </button>
+                </>
+              )}
             </div>
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}

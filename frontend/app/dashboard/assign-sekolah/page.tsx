@@ -204,6 +204,21 @@ export default function AssignSekolahPage() {
     else toast.error('Gagal mengexport data');
   };
 
+  const getVisiblePages = () => {
+    const maxVisible = 5;
+    if (totalPages <= maxVisible) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    const start = Math.max(1, page - 2);
+    const end = Math.min(totalPages, start + maxVisible - 1);
+    const adjustedStart = Math.max(1, end - maxVisible + 1);
+
+    return Array.from({ length: end - adjustedStart + 1 }, (_, i) => adjustedStart + i);
+  };
+
+  const visiblePages = getVisiblePages();
+
   return (
     <AdminLayout 
       currentPage="/dashboard/assign-sekolah" 
@@ -500,6 +515,43 @@ export default function AssignSekolahPage() {
             >
               Prev
             </button>
+            <div className="flex items-center gap-1">
+              {visiblePages[0] > 1 && (
+                <>
+                  <button
+                    onClick={() => setPage(1)}
+                    className="w-8 h-8 flex items-center justify-center rounded text-sm hover:bg-zinc-100 text-zinc-600 transition-colors"
+                  >
+                    1
+                  </button>
+                  {visiblePages[0] > 2 && <span className="text-zinc-400 px-0.5">...</span>}
+                </>
+              )}
+              {visiblePages.map((pageNum) => (
+                <button
+                  key={pageNum}
+                  onClick={() => setPage(pageNum)}
+                  className={`w-8 h-8 flex items-center justify-center rounded text-sm transition-colors ${
+                    page === pageNum
+                      ? 'bg-blue-600 text-white'
+                      : 'hover:bg-zinc-100 text-zinc-600'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              ))}
+              {visiblePages[visiblePages.length - 1] < totalPages && (
+                <>
+                  {visiblePages[visiblePages.length - 1] < totalPages - 1 && <span className="text-zinc-400 px-0.5">...</span>}
+                  <button
+                    onClick={() => setPage(totalPages)}
+                    className="w-8 h-8 flex items-center justify-center rounded text-sm hover:bg-zinc-100 text-zinc-600 transition-colors"
+                  >
+                    {totalPages}
+                  </button>
+                </>
+              )}
+            </div>
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
