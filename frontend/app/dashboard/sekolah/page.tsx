@@ -192,6 +192,16 @@ export default function SekolahPage() {
             Tambah Sekolah
           </button>
         )}
+
+        <button
+          onClick={handleExport}
+          className="btn-secondary flex items-center gap-2"
+          title="Export ke Excel"
+        >
+          <Download size={16} />
+          <span>Export Excel</span>
+        </button>
+
         <div className="relative flex-1 max-w-xs ml-auto">
           <Search
             size={16}
@@ -330,10 +340,7 @@ export default function SekolahPage() {
                           ))}
                         </div>
                       ) : (
-                        <span className="text-zinc-400 text-xs italic">Belum ada</span>
-                      )}
-                    </td>
-                    <td className="text-right font-medium">{sekolah.jumlah_siswa.toLocaleString('id-ID')}</td>
+                        <span className="text-zing('id-ID')}</td>
                     <td className="hidden lg:table-cell text-zinc-500">{sekolah.kontak || '-'}</td>
                     <td>
                       <span className={`badge ${sekolah.status === 'aktif' ? 'badge-green' : 'badge-red'}`}>
@@ -406,10 +413,10 @@ export default function SekolahPage() {
                   {visiblePages[visiblePages.length - 1] < totalPages - 1 && <span className="text-zinc-400 px-0.5">...</span>}
                   <button
                     onClick={() => setPage(totalPages)}
-                    className="w-8 h-8 flex items-center justify-center rounded text-sm hover:bg-zinc-100 text-zinc-600 transition-colors"
-                  >
-                    {totalPages}
-                  </button>
+                  .length - 1] < totalPages - 1 && <span className="text-zinc-400 px-0.5">...</span>}
+                  <button
+                    onClick={() => setPage(totalPages)}
+                          </button>
                 </>
               )}
             </div>
@@ -440,6 +447,33 @@ export default function SekolahPage() {
                 className="btn-secondary"
               >
                 Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDelete(deleteTarget.id)}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-medium transition-colors"
+              >
+                Hapus
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </AdminLayout>
+  );
+}
+-700 font-medium transition-colors"
+              >
+                Hapus
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </AdminLayout>
+  );
+}
+              Batal
               </button>
               <button
                 type="button"

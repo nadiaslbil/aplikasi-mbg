@@ -7,7 +7,8 @@ import AdminLayout from '@/components/AdminLayout';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
-import { Plus, X as CloseIcon, AlertTriangle, Calendar, School, Store, Edit, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { Plus, X as CloseIcon, AlertTriangle, Calendar, School, Store, Edit, CheckCircle, Clock, XCircle, Download } from 'lucide-react';
+import { exportToExcel } from '@/lib/export';
 import { usePermissions } from '@/hooks/usePermissions';
 
 interface Insiden {
@@ -176,6 +177,16 @@ export default function InsidenPage() {
             <Plus size={16} /> Lapor Insiden
           </button>
         )}
+
+        <button
+          onClick={handleExport}
+          className="btn-secondary flex items-center gap-2"
+          title="Export ke Excel"
+        >
+          <Download size={16} />
+          <span>Export Excel</span>
+        </button>
+
         <div className="ml-auto">
           <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="select">
             <option value="">Semua Status</option>
@@ -400,6 +411,28 @@ export default function InsidenPage() {
               {/* Actions */}
               <div className="flex gap-2 pt-4 border-t border-zinc-200">
                 <button
+                  type="button"
+                  onClick={() => setShowUpdateModal(false)}
+                  className="btn-secondary flex-1"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSubmitUpdate}
+                  className="btn-primary flex-1"
+                >
+                  Update Status
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </AdminLayout>
+  );
+}
+tton
                   type="button"
                   onClick={() => setShowUpdateModal(false)}
                   className="btn-secondary flex-1"

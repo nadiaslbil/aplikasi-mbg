@@ -13,12 +13,14 @@
     "leaflet": "^1.9.4",
     "lucide-react": "^1.7.0",
     "next": "16.2.4",
+    "nextjs-toploader": "^3.9.17",
     "react": "19.2.5",
     "react-dom": "19.2.5",
     "react-hook-form": "^7.72.1",
     "react-leaflet": "^5.0.0",
     "socket.io-client": "^4.8.3",
-    "sonner": "^2.0.7"
+    "sonner": "^2.0.7",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
