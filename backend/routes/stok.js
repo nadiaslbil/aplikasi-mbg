@@ -130,10 +130,25 @@ router.delete('/:id', authenticateToken, requireRole(permissions.stok.delete), a
     }
 
     await db('stok_bahan').where({ id: req.params.id }).update({ deleted_at: db.fn.now() });
+
+    // Log audit
+    await logAudit({
+      action: 'DELETE',
+      table_name: 'stok_bahan',
+      record_id: req.params.id,
+      old_values: existing,
+      req
+    });
+
     res.json({ message: 'Stok bahan berhasil dihapus' });
   } catch (error) {
     console.error('Delete stok error:', error);
     res.status(500).json({ error: 'Terjadi kesalahan server' });
+  }
+});
+
+module.exports = router;
+rjadi kesalahan server' });
   }
 });
 

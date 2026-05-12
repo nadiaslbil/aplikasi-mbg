@@ -147,22 +147,34 @@ router.put('/:id', authenticateToken, requireRole([...permissions.dapur.update, 
       return res.status(403).json({ error: 'Anda hanya bisa mengubah dapur milik Anda sendiri' });
     }
 
+    const updatePayload = {
+      nama,
+      alamat,
+      latitude,
+      longitude,
+      kecamatan,
+      kabupaten,
+      provinsi,
+      kapasitas_harian,
+      kontak,
+      penanggung_jawab,
+      status,
+      updated_at: db.fn.now()
+    };
+
     await db('dapur_supplier')
       .where({ id: req.params.id })
-      .update({
-        nama,
-        alamat,
-        latitude,
-        longitude,
-        kecamatan,
-        kabupaten,
-        provinsi,
-        kapasitas_harian,
-        kontak,
-        penanggung_jawab,
-        status,
-        updated_at: db.fn.now()
-      });
+      .update(updatePayload);
+
+    // Log audit
+    await logAudit({
+      action: 'UPDATE',
+      table_name: 'dapur_supplier',
+      record_id: req.params.id,
+      old_values: existing,
+      new_values: updatePayload,
+      req
+    });
 
     res.json({ message: 'Dapur supplier berhasil diupdate' });
   } catch (error) {

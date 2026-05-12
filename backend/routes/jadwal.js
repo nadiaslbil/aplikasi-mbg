@@ -241,10 +241,25 @@ router.delete('/:id', authenticateToken, requireRole(permissions.jadwal.delete),
     }
 
     await db('jadwal_distribusi').where({ id: req.params.id }).update({ deleted_at: db.fn.now() });
+
+    // Log audit
+    await logAudit({
+      action: 'DELETE',
+      table_name: 'jadwal_distribusi',
+      record_id: req.params.id,
+      old_values: existing,
+      req
+    });
+
     res.json({ message: 'Jadwal distribusi berhasil dihapus' });
   } catch (error) {
     console.error('Delete jadwal error:', error);
     res.status(500).json({ error: 'Terjadi kesalahan server' });
+  }
+});
+
+module.exports = router;
+salahan server' });
   }
 });
 

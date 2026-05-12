@@ -184,15 +184,27 @@ router.put('/:id/location', authenticateToken, requireRole(permissions.pengirima
       return res.status(403).json({ error: 'Anda hanya bisa mengupdate lokasi pengiriman Anda sendiri' });
     }
 
+    const updatePayload = {
+      latitude: latitude !== undefined ? latitude : existing.latitude,
+      longitude: longitude !== undefined ? longitude : existing.longitude,
+      status: status || existing.status,
+      catatan: catatan !== undefined ? catatan : existing.catatan,
+      updated_at: db.fn.now()
+    };
+
     await db('pengiriman')
       .where({ id: req.params.id })
-      .update({
-        latitude: latitude !== undefined ? latitude : existing.latitude,
-        longitude: longitude !== undefined ? longitude : existing.longitude,
-        status: status || existing.status,
-        catatan: catatan !== undefined ? catatan : existing.catatan,
-        updated_at: db.fn.now()
-      });
+      .update(updatePayload);
+
+    // Log audit (tracking location)
+    await logAudit({
+      action: 'UPDATE_LOCATION',
+      table_name: 'pengiriman',
+      record_id: req.params.id,
+      old_values: { latitude: existing.latitude, longitude: existing.longitude, status: existing.status },
+      new_values: updatePayload,
+      req
+    });
 
     if (status === 'diterima') {
       await db('jadwal_distribusi')

@@ -127,10 +127,26 @@ router.delete('/:id', authenticateToken, requireRole(permissions.insiden.delete)
     }
 
     await db('insiden').where({ id: req.params.id }).update({ deleted_at: db.fn.now() });
+
+    // Log audit
+    await logAudit({
+      action: 'DELETE',
+      table_name: 'insiden',
+      record_id: req.params.id,
+      old_values: existing,
+      req
+    });
+
     res.json({ message: 'Insiden berhasil dihapus' });
   } catch (error) {
     console.error('Delete insiden error:', error);
     res.status(500).json({ error: 'Terjadi kesalahan server' });
+  }
+});
+
+module.exports = router;
+xports = router;
+ server' });
   }
 });
 

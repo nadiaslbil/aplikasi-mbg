@@ -5,6 +5,7 @@ const { db } = require("../database");
 const { authenticateToken } = require("../middleware/auth");
 const { requireRole, permissions } = require("../middleware/rbac");
 const { userUpdateSchema, registerSchema, validate } = require("../validation/schemas");
+const { logAudit } = require("../middleware/audit");
 
 // List users (supports ?search= & ?role=)
 router.get("/", authenticateToken, requireRole(permissions.users.read), async (req, res) => {
@@ -108,6 +109,17 @@ router.delete("/:id", authenticateToken, requireRole(permissions.users.delete), 
 
     const existing = await db('users').where({ id }).whereNull('deleted_at').first();
     if (!existing) return res.status(404).json({ error: "User tidak ditemukan" });
+
+    await db('users').where({ id }).update({ deleted_at: db.fn.now() });
+    res.json({ message: "User berhasil dihapus" });
+  } catch (error) {
+    console.error("Delete user error:", error);
+    res.status(500).json({ error: "Terjadi kesalahan server" });
+  }
+});
+
+module.exports = router;
+temukan" });
 
     await db('users').where({ id }).update({ deleted_at: db.fn.now() });
     res.json({ message: "User berhasil dihapus" });
