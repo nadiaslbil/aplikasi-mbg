@@ -96,7 +96,20 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
-// Generate Schedules for selected dates
+// Helper: Calculate straight-line distance (Haversine)
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return 999;
+  const R = 6371; // km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+// Generate Schedules for selected dates with optimized routing
 router.post('/generate-weekly', authenticateToken, requireRole(permissions.jadwal.create), async (req, res) => {
   const trx = await db.transaction();
   try {
@@ -113,7 +126,11 @@ router.post('/generate-weekly', authenticateToken, requireRole(permissions.jadwa
     const relations = await trx('dapur_sekolah as dsk')
       .join('dapur_supplier as ds', 'dsk.dapur_id', 'ds.id')
       .join('sekolah as s', 'dsk.sekolah_id', 's.id')
-      .select('dsk.*', 'ds.nama as dapur_nama', 'ds.kapasitas_harian', 's.nama as sekolah_nama')
+      .select(
+        'dsk.*', 
+        'ds.nama as dapur_nama', 'ds.kapasitas_harian', 'ds.latitude as dapur_lat', 'ds.longitude as dapur_lng',
+        's.nama as sekolah_nama', 's.latitude as sekolah_lat', 's.longitude as sekolah_lng'
+      )
       .where('dsk.status', 'aktif')
       .where('ds.status', 'aktif')
       .where('s.status', 'aktif')
@@ -126,7 +143,7 @@ router.post('/generate-weekly', authenticateToken, requireRole(permissions.jadwa
       .where('dk.status', 'aktif')
       .whereNull('u.deleted_at');
 
-    // 2. Fetch existing schedules for the selected dates to prevent duplicates
+    // 2. Fetch existing schedules
     const existingSchedules = await trx('jadwal_distribusi')
       .whereIn('tanggal', dateRange)
       .whereNull('deleted_at');
@@ -142,75 +159,116 @@ router.post('/generate-weekly', authenticateToken, requireRole(permissions.jadwa
     };
 
     const capacityTracker = {}; // { kitchenId_date: current_load }
-    const courierCounters = {}; // { kitchenId_date: index }
 
     for (const date of dateRange) {
       const dayName = dayNames[new Date(date).getDay()];
-      results.summary[date] = []; // Use date as key instead of day name for clarity
+      results.summary[date] = [];
 
-      for (const rel of relations) {
-        // Match day
-        let hariKirim = [];
-        try {
-          hariKirim = typeof rel.hari_kirim === 'string' ? JSON.parse(rel.hari_kirim) : rel.hari_kirim;
-        } catch (e) {
-          console.error('JSON Parse error for hari_kirim:', rel.hari_kirim);
-          continue;
-        }
+      // Group relations by kitchen for this date
+      const kitchensInvolved = [...new Set(relations.map(r => r.dapur_id))];
 
-        if (!hariKirim.includes(dayName)) continue;
-
-        // Prevent duplication
-        if (existingMap.has(`${date}_${rel.dapur_id}_${rel.sekolah_id}`)) {
-          results.skipped++;
-          continue;
-        }
-
-        // Track Capacity
-        const capKey = `${rel.dapur_id}_${date}`;
-        capacityTracker[capKey] = (capacityTracker[capKey] || 0) + rel.jumlah_porsi;
+      for (const kitchenId of kitchensInvolved) {
+        const kitchenRel = relations.filter(r => r.dapur_id === kitchenId);
+        const kitchenCouriers = kurirRelations.filter(k => k.dapur_id === kitchenId);
         
-        if (capacityTracker[capKey] > rel.kapasitas_harian) {
-          const warn = `Dapur ${rel.dapur_nama} melebihi kapasitas pada ${date} (Total: ${capacityTracker[capKey]}/${rel.kapasitas_harian})`;
-          if (!results.warnings.includes(warn)) results.warnings.push(warn);
-        }
-
-        // Round Robin Courier Assignment
-        const kitchenCouriers = kurirRelations.filter(k => k.dapur_id === rel.dapur_id);
-        let kurirNama = 'Belum ada';
-
-        if (kitchenCouriers.length > 0) {
-          const counterKey = `${rel.dapur_id}_${date}`;
-          courierCounters[counterKey] = courierCounters[counterKey] !== undefined ? courierCounters[counterKey] : 0;
-          const kurirIndex = courierCounters[counterKey] % kitchenCouriers.length;
-          const assigned = kitchenCouriers[kurirIndex];
-          kurirNama = assigned.kurir_nama;
-          courierCounters[counterKey]++;
-        }
-
-        const [id] = await trx('jadwal_distribusi').insert({
-          dapur_id: rel.dapur_id,
-          sekolah_id: rel.sekolah_id,
-          tanggal: date,
-          waktu_kirim: '07:00', // Default
-          jumlah_porsi: rel.jumlah_porsi,
-          status: 'terjadwal'
-        }).returning('id');
-
-        const newId = typeof id === 'object' ? id.id : id;
-
-        results.created++;
-        results.summary[date].push({
-          id: newId,
-          dapur: rel.dapur_nama,
-          sekolah: rel.sekolah_nama,
-          porsi: rel.jumlah_porsi,
-          waktu: '07:00',
-          kurir: kurirNama,
-          status: 'terjadwal'
+        // Filter schools for this specific day
+        const schoolsForToday = kitchenRel.filter(rel => {
+          let hariKirim = [];
+          try {
+            hariKirim = typeof rel.hari_kirim === 'string' ? JSON.parse(rel.hari_kirim) : rel.hari_kirim;
+          } catch (e) { return false; }
+          return hariKirim.includes(dayName);
         });
+
+        if (schoolsForToday.length === 0) continue;
+
+        // --- OPTIMIZATION LOGIC ---
+        // 1. Calculate distance and sort schools
+        schoolsForToday.forEach(s => {
+          s.distance = calculateDistance(s.dapur_lat, s.dapur_lng, s.sekolah_lat, s.sekolah_lng);
+        });
+        schoolsForToday.sort((a, b) => a.distance - b.distance);
+
+        // 2. Group schools for couriers (Load Balancing)
+        // If we have 3 couriers and 6 schools, each gets 2.
+        const numCouriers = kitchenCouriers.length || 1;
+        const schoolsPerCourier = Math.ceil(schoolsForToday.length / numCouriers);
+
+        for (let i = 0; i < schoolsForToday.length; i++) {
+          const rel = schoolsForToday[i];
+          
+          // Prevent duplication
+          if (existingMap.has(`${date}_${rel.dapur_id}_${rel.sekolah_id}`)) {
+            results.skipped++;
+            continue;
+          }
+
+          // Track Capacity
+          const capKey = `${rel.dapur_id}_${date}`;
+          capacityTracker[capKey] = (capacityTracker[capKey] || 0) + rel.jumlah_porsi;
+          if (capacityTracker[capKey] > rel.kapasitas_harian) {
+            const warn = `Dapur ${rel.dapur_nama} melebihi kapasitas pada ${date} (Total: ${capacityTracker[capKey]}/${rel.kapasitas_harian})`;
+            if (!results.warnings.includes(warn)) results.warnings.push(warn);
+          }
+
+          // 3. Assign Courier based on cluster
+          const courierIdx = Math.floor(i / schoolsPerCourier);
+          const assignedKurir = kitchenCouriers[courierIdx] || kitchenCouriers[0];
+          const kurirNama = assignedKurir ? assignedKurir.kurir_nama : 'Belum ada';
+
+          // 4. Dynamic Timing (OFFSET)
+          // Each stop in the courier's route adds 30 minutes.
+          const stopInRoute = i % schoolsPerCourier;
+          const baseMinutes = 7 * 60; // 07:00
+          const offsetMinutes = stopInRoute * 30; // 30 mins per stop
+          const totalMinutes = baseMinutes + offsetMinutes;
+          
+          const hours = Math.floor(totalMinutes / 60).toString().padStart(2, '0');
+          const mins = (totalMinutes % 60).toString().padStart(2, '0');
+          const waktuKirim = `${hours}:${mins}`;
+
+          const [id] = await trx('jadwal_distribusi').insert({
+            dapur_id: rel.dapur_id,
+            sekolah_id: rel.sekolah_id,
+            tanggal: date,
+            waktu_kirim: waktuKirim,
+            jumlah_porsi: rel.jumlah_porsi,
+            status: 'terjadwal'
+          }).returning('id');
+
+          const newId = typeof id === 'object' ? id.id : id;
+
+          results.created++;
+          results.summary[date].push({
+            id: newId,
+            dapur: rel.dapur_nama,
+            sekolah: rel.sekolah_nama,
+            porsi: rel.jumlah_porsi,
+            waktu: waktuKirim,
+            kurir: kurirNama,
+            status: 'terjadwal'
+          });
+        }
       }
     }
+
+    await trx.commit();
+
+    await logAudit({
+      action: 'GENERATE_BULK',
+      table_name: 'jadwal_distribusi',
+      record_id: 0,
+      new_values: { dates: dateRange, count: results.created },
+      req
+    });
+
+    res.json(results);
+  } catch (error) {
+    await trx.rollback();
+    console.error('Generate bulk error:', error);
+    res.status(500).json({ error: 'Gagal men-generate jadwal: ' + error.message });
+  }
+});
 
     await trx.commit();
 
