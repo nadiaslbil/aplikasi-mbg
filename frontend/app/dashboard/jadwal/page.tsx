@@ -86,6 +86,146 @@ export default function JadwalPage() {
   const { register, handleSubmit, reset, setValue, getValues } = useForm<JadwalForm>();
   const isAdmin = user?.role === 'admin_bgn' || user?.role === 'admin_daerah';
 
+  const normalizeArray = <T,>(payload: unknown): T[] => {
+    if (Array.isArray(payload)) return payload as T[];
+    if (payload && typeof payload === 'object') {
+      const record = payload as Record<string, unknown>;
+      if (Array.isArray(record.data)) return record.data as T[];
+      if (Array.isArray(record.items)) return record.items as T[];
+      if (Array.isArray(record.results)) return record.results as T[];
+    }
+    return [];
+  };
+
+  const fetchAll = async () => {
+    try {
+      setLoading(true);
+      const params: any = {};
+      if (filterTanggal) params.tanggal = filterTanggal;
+      if (filterStatus) params.status = filterStatus;
+      
+      const fetchPromises: Promise<any>[] = [
+        api.get('/jadwal', { params }),
+        api.get('/dapur'),
+        api.get('/sekolah'),
+      ];
+
+      if (isAdmin) {
+        fetchPromises.push(api.get('/kurir'));
+      } else {
+        fetchPromises.push(Promise.resolve({ data: [] }));
+      }
+
+      const [jadwalRes, dapurRes, sekolahRes, kurirRes] = await Promise.all(fetchPromises);
+      const jadwalData = normalizeArray<Jadwal>(jadwalRes.data);
+      const dapurData = normalizeArray<Dapur>(dapurRes.data);
+      const sekolahData = normalizeArray<Sekolah>(sekolahRes.data);
+      const kurirData = normalizeArray<Kurir>(kurirRes.data);
+
+      setJadwalList(jadwalData);
+      setDapurList(dapurData);
+      setSekolahList(sekolahData);
+      setKurirList(kurirData);
+      setFilteredSekolahList(sekolahData);
+      setFilteredKurirList(isAdmin ? kurirData : []);
+    } catch (error) { 
+      console.error('Error fetching data:', error); 
+      toast.error('Gagal mengambil data');
+    } finally { 
+      setLoading(false); 
+    }
+  };
+
+  useEffect(() => {
+    fetchAll();
+  }, [filterTanggal, filterStatus]);
+
+  const fetchRelatedByDapur = useCallback(async (dapurId: number) => {
+    try {
+      const sekolahRes = await api.get(`/dapur/${dapurId}/sekolah`);
+      const sekolahData = normalizeArray<Sekolah>(sekolahRes.data);
+      setFilteredSekolahList(sekolahData);
+
+      const currentSekolahId = getValues('sekolah_id');
+      const sekolahValid = sekolahData.some((s: Sekolah) => s.id === currentSekolahId);
+      if (!sekolahValid) {
+        setValue('sekolah_id', sekolahData[0]?.id || 0);
+      }
+
+      if (isAdmin) {
+        const dapurKurirRes = await api.get('/dapur-kurir', { params: { dapur_id: dapurId } });
+        const dapurKurirData = normalizeArray<DapurKurirRelation>(dapurKurirRes.data);
+        const kurirIds = new Set(dapurKurirData.map((r) => r.kurir_id));
+        const mappedKurir = kurirList.filter((k) => kurirIds.has(k.id));
+        setFilteredKurirList(mappedKurir);
+
+        const currentKurirId = getValues('kurir_id');
+        const kurirValid = mappedKurir.some((k) => k.id === currentKurirId);
+        if (!kurirValid) {
+          setValue('kurir_id', 0);
+        }
+      } else {
+        setFilteredKurirList([]);
+      }
+    } catch (error) {
+      console.error('Error fetching related dapur data:', error);
+    }
+  }, [getValues, isAdmin, kurirList, setValue]);
+
+  useEffect(() => {
+    if (!showForm || !selectedDapurId) return;
+    fetchRelatedByDapur(selectedDapurId);
+  }, [showForm, selectedDapurId, fetchRelatedByDapur]);
+
+  const onSubmit = async (data: JadwalForm) => {
+    try {
+      const payload = { ...data, kurir_id: data.kurir_id === 0 ? undefined : data.kurir_id };
+      if (editingId) {
+        await api.put(`/jadwal/${editingId}`, payload);
+        toast.success('Jadwal berhasil diupdate');
+      } else {
+        await api.post('/jadwal', payload);
+        toast.success('Jadwal berhasil ditambahkan');
+      }
+      fetchAll();
+      handleCloseForm();
+    } catch (error: any) { toast.error(error.response?.data?.error || 'Terjadi kesalahan'); }
+  };
+
+  const handleEdit = (jadwal: Jadwal) => {
+    setEditingId(jadwal.id);
+    setSelectedDapurId(jadwal.dapur_id);
+    reset({
+      dapur_id: jadwal.dapur_id,
+      sekolah_id: jadwal.sekolah_id,
+      tanggal: jadwal.tanggal,
+      waktu_kirim: jadwal.waktu_kirim,
+      jumlah_porsi: jadwal.jumlah_porsi,
+      catatan: jadwal.catatan,
+      kurir_id: 0,
+    });
+    setShowForm(true);
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Yakin ingin menghapus jadwal ini?')) return;
+    try {
+      await api.delete(`/jadwal/${id}`);
+      toast.success('Jadwal berhasil dihapus');
+      fetchAll();
+    }
+    catch (error: any) { toast.error(error.response?.data?.error || 'Terjadi kesalahan'); }
+  };
+
+  const handleCloseForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setSelectedDapurId(null);
+    setFilteredSekolahList(sekolahList);
+    setFilteredKurirList(isAdmin ? kurirList : []);
+    reset();
+  };
+
   // Initialize dates for generation (next 7 days)
   const initGenerateDates = () => {
     const dates = [];
