@@ -1,15 +1,15 @@
 # 📦 HANDOVER DOKUMENTASI - MBG Distribution System
 
-> **Tanggal:** 12 Mei 2026 (UPDATED)
-> **Status:** Production Ready (Knex.js Integrated + Unified Backend + UI Refined)
+> **Tanggal:** 12 Mei 2026 (LATEST UPDATE)
+> **Status:** Production Ready (Knex.js + Zod Validated + Soft Delete + Resilient UI)
 > **Fokus:** Kabupaten Banjarnegara, Jawa Tengah
-> **Latest Update:** ✅ Knex.js Migration + ✅ Unified Entry Point + ✅ Dashboard UI Refactor
+> **Latest Update:** ✅ Database Modernization + ✅ Input Validation + ✅ Data Integrity + ✅ Error Handling
 
 ---
 
 ## 📋 RINGKASAN SINGKAT (UPDATE 12 MEI 2026)
 
-Aplikasi telah melewati tahap refaktorisasi besar pada sisi Backend untuk menjamin stabilitas database lintas platform (SQLite/Postgres) menggunakan **Knex.js**. Sisi Frontend juga telah diperbarui dengan layout dashboard yang lebih profesional dan minimalis, serta sinkronisasi branding yang menyeluruh hingga ke halaman login.
+Aplikasi telah melalui fase penguatan fundamental pada arsitektur Backend dan Frontend. Fokus utama adalah pada **Stabilitas Database**, **Keamanan Input**, **Integritas Data**, dan **Ketangguhan UI**. Sistem kini menggunakan standar industri modern untuk memastikan operasional di Vercel berjalan tanpa kendala teknis yang umum.
 
 ---
 
@@ -17,39 +17,43 @@ Aplikasi telah melewati tahap refaktorisasi besar pada sisi Backend untuk menjam
 
 ### ✅ **Backend Modernization (Knex.js Implementation)**
 - **SQL Transformation Fix:** Menghapus logika penggantian string manual yang berisiko. Knex.js kini menangani perbedaan dialek antara SQLite (Lokal) dan Postgres (Vercel) secara otomatis dan aman.
-- **Enhanced Security:** Proteksi SQL Injection yang lebih kuat melalui *parameterized queries* bawaan Knex.
-- **Clean Architecture:** Memulai migrasi rute API (seperti Auth) menggunakan Knex Query Builder yang lebih *maintainable*.
+- **Unified Entry Point:** Menyatukan `server.js` dan `api/index.js` untuk konsistensi 100% antara lingkungan development dan production.
 
-### ✅ **Unified Backend Architecture**
-- **Eliminate Duplication:** Menggabungkan logika `server.js` dan `api/index.js` menjadi arsitektur **Unified Entry Point**. Tidak ada lagi duplikasi logika login atau konfigurasi middleware.
-- **Local Dev Consistency:** `server.js` kini berfungsi sebagai wrapper minimalis, memastikan perilaku backend di lokal 100% identik dengan di produksi (Vercel).
+### ✅ **Robust Input Validation (Zod)**
+- **Strict Schema Validation:** Menggunakan library **Zod** untuk memvalidasi seluruh input API (Auth, Sekolah, Dapur, User, Insiden, Stok).
+- **Security Guard:** Mencegah data rusak, format email salah, atau serangan injection masuk ke database.
 
-### ✅ **UI/UX Refinement (Map-Centric Dashboard)**
-- **Professional Map Layout:** Peta kini menjadi fokus utama dengan tinggi 70vh dan tampilan yang lebih bersih.
-- **Summary Statistics:** Menghapus tombol-tombol redundant dan menggantinya dengan baris statistik dinamis (Sekolah, Dapur, Kurir Aktif) di atas peta.
-- **Minimalist Design:** Menghapus banner deskripsi mencolok dan beralih ke desain yang lebih tenang dan lega sesuai standar dashboard modern.
+### ✅ **Data Integrity (Soft Delete)**
+- **Non-Destructive Deletion:** Implementasi kolom `deleted_at` pada seluruh tabel utama. Data yang dihapus tidak akan hilang secara fisik, menjaga integritas riwayat laporan dan statistik distribusi.
+- **Automatic Filtering:** Seluruh rute API dan dashboard secara otomatis hanya memproses data yang aktif.
 
-### ✅ **Full Branding Synchronization**
-- **Dynamic Login Page:** Halaman login sekarang sepenuhnya sinkron dengan **Pengaturan Aplikasi** (Logo, Nama Aplikasi, Nama Instansi, dan Copyright) yang diatur melalui dashboard admin.
-- **Fallback Mechanism:** Sistem otomatis kembali ke icon default jika logo kustom gagal dimuat atau tidak tersedia.
+### ✅ **Frontend Resilience (Error Boundary)**
+- **Crash Prevention:** Implementasi **Global Error Boundary** untuk menangkap kesalahan runtime JavaScript.
+- **Friendly Fallback:** Mengganti "layar putih" (crash) dengan pesan kesalahan yang ramah pengguna dan opsi pemulihan mandiri (Reload/Back to Dashboard).
+
+### ✅ **UI/UX Refinement (Map-Centric)**
+- **Professional Dashboard:** Refaktor layout peta menjadi fokus utama (70vh) dengan statistik ringkas yang dinamis (Kecamatan, Sekolah, Dapur, Kurir Aktif).
+- **Dynamic Branding:** Sinkronisasi logo, nama aplikasi, dan instansi hingga ke halaman login secara real-time dari database.
 
 ---
 
 ## 🏗️ STRUKTUR PROJECT (UPDATED)
 ...
-├── backend/                          # Backend Serverless Function
+├── backend/                          # Backend API (Express + Knex)
 │   ├── api/
-│   │   └── index.js                  # Unified Entry Point (Main Logic)
-│   ├── routes/
-│   │   └── auth.js                   # ✅ Centralized Auth Logic (Knex)
-│   ├── database.js                   # ✅ Refactored: Knex.js Configuration
-│   ├── server.js                     # ✅ Minimal Local Runner
+│   │   └── index.js                  # Main Entry Point & CORS Config
+│   ├── routes/                       # Refactored: Knex-based Routes
+│   ├── validation/
+│   │   └── schemas.js                # ✅ New: Zod Validation Schemas
+│   ├── database.js                   # ✅ Refactored: Knex Configuration
+│   ├── migration-soft-delete.js      # ✅ New: Database Migration Script
 ...
 ├── frontend/                         # Next.js 16 (Theta)
 │   ├── components/
-│   │   └── BanjarnegaraMapImpl.tsx   # ✅ Refactored: Minimalist UI
+│   │   ├── ErrorBoundary.tsx         # ✅ New: Crash Protection
+│   │   └── BanjarnegaraMapImpl.tsx   # ✅ Refactored: Modern Map UI
 │   ├── app/
-│   │   └── login/                    # ✅ Dynamic Branding Applied
+│   │   └── layout.tsx                # ✅ Integrated: Global Error Handling
 ...
 ```
 
@@ -59,8 +63,8 @@ Aplikasi telah melewati tahap refaktorisasi besar pada sisi Backend untuk menjam
 
 **Overall Progress: ~99% Complete** 🚀
 
-*(Sistem sudah dioptimasi untuk skalabilitas dan keamanan tingkat lanjut)*
+*(Sistem kini memiliki fondasi teknis yang kokoh, aman, dan siap untuk skalabilitas tinggi)*
 
 ---
 
-**© 2026 - MBG Distribution System - Last Updated: 12 Mei 2026 (Modernization & UI Refinement)**
+**© 2026 - MBG Distribution System - Last Updated: 12 Mei 2026 (Architecture & Security Strengthening)**

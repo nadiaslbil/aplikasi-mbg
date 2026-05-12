@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { all, get, run } = require('../database');
+const { db } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
 const { requireRole, permissions } = require('../middleware/rbac');
 const { sekolahSchema, validate } = require('../validation/schemas');
@@ -13,19 +13,17 @@ router.get('/', authenticateToken, async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
     
-    let baseQuery = 'FROM sekolah WHERE 1=1';
-    const params = [];
+    let query = db('sekolah').whereNull('deleted_at');
 
     if (req.user?.role === 'supplier' || req.user?.role === 'kurir') {
       let accessibleDapurIds = [];
       if (req.user.role === 'supplier') {
-        const rows = await all('SELECT id FROM dapur_supplier WHERE user_id = ?', [req.user.id]);
+        const rows = await db('dapur_supplier').select('id').where({ user_id: req.user.id }).whereNull('deleted_at');
         accessibleDapurIds = rows.map((r) => r.id);
       } else {
-        const rows = await all(
-          "SELECT dapur_id FROM dapur_kurir WHERE kurir_id = ? AND status = 'aktif'",
-          [req.user.id]
-        );
+        const rows = await db('dapur_kurir')
+          .select('dapur_id')
+          .where({ kurir_id: req.user.id, status: 'aktif' });
         accessibleDapurIds = rows.map((r) => r.dapur_id);
       }
 
@@ -39,46 +37,36 @@ router.get('/', authenticateToken, async (req, res) => {
         });
       }
 
-      const placeholders = accessibleDapurIds.map(() => '?').join(', ');
-      baseQuery += `
-        AND EXISTS (
-          SELECT 1
-          FROM dapur_sekolah dsk
-          WHERE dsk.sekolah_id = sekolah.id
-            AND dsk.status = 'aktif'
-            AND dsk.dapur_id IN (${placeholders})
-        )
-      `;
-      params.push(...accessibleDapurIds);
+      query = query.whereExists(function() {
+        this.select(1)
+          .from('dapur_sekolah')
+          .whereRaw('dapur_sekolah.sekolah_id = sekolah.id')
+          .where({ status: 'aktif' })
+          .whereIn('dapur_id', accessibleDapurIds);
+      });
     }
 
-    if (kecamatan) {
-      baseQuery += ' AND kecamatan = ?';
-      params.push(kecamatan);
-    }
-
-    if (kabupaten) {
-      baseQuery += ' AND kabupaten = ?';
-      params.push(kabupaten);
-    }
-
-    if (status) {
-      baseQuery += ' AND status = ?';
-      params.push(status);
-    }
-
+    if (kecamatan) query = query.where({ kecamatan });
+    if (kabupaten) query = query.where({ kabupaten });
+    if (status) query = query.where({ status });
     if (search) {
-      baseQuery += ' AND (nama LIKE ? OR alamat LIKE ? OR kecamatan LIKE ?)';
-      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+      query = query.where(function() {
+        this.where('nama', 'LIKE', `%${search}%`)
+          .orWhere('alamat', 'LIKE', `%${search}%`)
+          .orWhere('kecamatan', 'LIKE', `%${search}%`);
+      });
     }
 
-    // Get total count for pagination
-    const countResult = await get(`SELECT COUNT(*) as total ${baseQuery}`, params);
-    const total = countResult.total;
+    // Get total count
+    const totalCount = await query.clone().count('* as total').first();
+    const total = totalCount.total;
 
     // Get paginated data
-    let query = `SELECT * ${baseQuery} ORDER BY nama ASC LIMIT ? OFFSET ?`;
-    const sekolah = await all(query, [...params, limit, offset]);
+    const sekolah = await query
+      .select('*')
+      .orderBy('nama', 'asc')
+      .limit(limit)
+      .offset(offset);
 
     if (!sekolah.length) {
       return res.json({
@@ -91,18 +79,13 @@ router.get('/', authenticateToken, async (req, res) => {
     }
 
     const sekolahIds = sekolah.map((s) => s.id);
-    const placeholders = sekolahIds.map(() => '?').join(', ');
-    const dapurRows = await all(
-      `
-        SELECT dsk.sekolah_id, ds.nama as dapur_nama
-        FROM dapur_sekolah dsk
-        JOIN dapur_supplier ds ON dsk.dapur_id = ds.id
-        WHERE dsk.status = 'aktif'
-          AND dsk.sekolah_id IN (${placeholders})
-        ORDER BY ds.nama ASC
-      `,
-      sekolahIds
-    );
+    const dapurRows = await db('dapur_sekolah')
+      .join('dapur_supplier', 'dapur_sekolah.dapur_id', 'dapur_supplier.id')
+      .select('dapur_sekolah.sekolah_id', 'dapur_supplier.nama as dapur_nama')
+      .where({ 'dapur_sekolah.status': 'aktif' })
+      .whereIn('dapur_sekolah.sekolah_id', sekolahIds)
+      .whereNull('dapur_supplier.deleted_at')
+      .orderBy('dapur_supplier.nama', 'asc');
 
     const dapurBySekolah = new Map();
     for (const row of dapurRows) {
@@ -132,23 +115,24 @@ router.get('/', authenticateToken, async (req, res) => {
 // Get sekolah by id
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
-    const sekolah = await get('SELECT * FROM sekolah WHERE id = ?', [req.params.id]);
+    const sekolah = await db('sekolah')
+      .where({ id: req.params.id })
+      .whereNull('deleted_at')
+      .first();
     
     if (!sekolah) {
       return res.status(404).json({ error: 'Sekolah tidak ditemukan' });
     }
 
-    const dapurRows = await all(
-      `
-        SELECT ds.nama as dapur_nama
-        FROM dapur_sekolah dsk
-        JOIN dapur_supplier ds ON dsk.dapur_id = ds.id
-        WHERE dsk.status = 'aktif'
-          AND dsk.sekolah_id = ?
-        ORDER BY ds.nama ASC
-      `,
-      [req.params.id]
-    );
+    const dapurRows = await db('dapur_sekolah')
+      .join('dapur_supplier', 'dapur_sekolah.dapur_id', 'dapur_supplier.id')
+      .select('dapur_supplier.nama as dapur_nama')
+      .where({ 
+        'dapur_sekolah.sekolah_id': req.params.id,
+        'dapur_sekolah.status': 'aktif' 
+      })
+      .whereNull('dapur_supplier.deleted_at')
+      .orderBy('dapur_supplier.nama', 'asc');
 
     res.json({
       ...sekolah,
@@ -164,17 +148,21 @@ router.post('/', authenticateToken, requireRole(permissions.sekolah.create), val
   try {
     const { nama, alamat, latitude, longitude, kecamatan, kabupaten, provinsi, jumlah_siswa, kontak } = req.body;
 
-    const result = await run(
-      `
-        INSERT INTO sekolah (nama, alamat, latitude, longitude, kecamatan, kabupaten, provinsi, jumlah_siswa, kontak)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `,
-      [nama, alamat, latitude, longitude, kecamatan, kabupaten, provinsi, jumlah_siswa || 0, kontak || null]
-    );
+    const [id] = await db('sekolah').insert({
+      nama, 
+      alamat, 
+      latitude, 
+      longitude, 
+      kecamatan, 
+      kabupaten, 
+      provinsi, 
+      jumlah_siswa: jumlah_siswa || 0, 
+      kontak: kontak || null
+    }).returning('id');
 
     res.status(201).json({
       message: 'Sekolah berhasil ditambahkan',
-      id: result.lastID,
+      id: typeof id === 'object' ? id.id : id,
     });
   } catch (error) {
     console.error('Create sekolah error:', error);
@@ -187,22 +175,15 @@ router.put('/:id', authenticateToken, requireRole(permissions.sekolah.update), v
   try {
     const { nama, alamat, latitude, longitude, kecamatan, kabupaten, provinsi, jumlah_siswa, kontak, status } = req.body;
 
-    const existing = await get('SELECT id FROM sekolah WHERE id = ?', [req.params.id]);
+    const existing = await db('sekolah').where({ id: req.params.id }).whereNull('deleted_at').first();
     
     if (!existing) {
       return res.status(404).json({ error: 'Sekolah tidak ditemukan' });
     }
 
-    await run(
-      `
-        UPDATE sekolah 
-        SET nama = ?, alamat = ?, latitude = ?, longitude = ?, 
-            kecamatan = ?, kabupaten = ?, provinsi = ?, 
-            jumlah_siswa = ?, kontak = ?, status = ?,
-            updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?
-      `,
-      [
+    await db('sekolah')
+      .where({ id: req.params.id })
+      .update({
         nama,
         alamat,
         latitude,
@@ -213,9 +194,8 @@ router.put('/:id', authenticateToken, requireRole(permissions.sekolah.update), v
         jumlah_siswa,
         kontak,
         status,
-        req.params.id,
-      ]
-    );
+        updated_at: db.fn.now()
+      });
 
     res.json({ message: 'Sekolah berhasil diupdate' });
   } catch (error) {
@@ -224,16 +204,19 @@ router.put('/:id', authenticateToken, requireRole(permissions.sekolah.update), v
   }
 });
 
-// Delete sekolah
+// Delete sekolah (Soft Delete)
 router.delete('/:id', authenticateToken, requireRole(permissions.sekolah.delete), async (req, res) => {
   try {
-    const existing = await get('SELECT id FROM sekolah WHERE id = ?', [req.params.id]);
+    const existing = await db('sekolah').where({ id: req.params.id }).whereNull('deleted_at').first();
     
     if (!existing) {
       return res.status(404).json({ error: 'Sekolah tidak ditemukan' });
     }
 
-    await run('DELETE FROM sekolah WHERE id = ?', [req.params.id]);
+    await db('sekolah')
+      .where({ id: req.params.id })
+      .update({ deleted_at: db.fn.now() });
+
     res.json({ message: 'Sekolah berhasil dihapus' });
   } catch (error) {
     console.error('Delete sekolah error:', error);

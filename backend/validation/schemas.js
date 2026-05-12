@@ -94,6 +94,19 @@ const validate = (schema) => (req, res, next) => {
   }
 };
 
+// Jadwal Schema
+const jadwalSchema = z.object({
+  dapur_id: z.number().int(),
+  sekolah_id: z.number().int(),
+  tanggal: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal harus YYYY-MM-DD'),
+  waktu_kirim: z.string().nullable().optional(),
+  waktu_terima: z.string().nullable().optional(),
+  jumlah_porsi: z.number().int().positive('Jumlah porsi harus lebih dari 0'),
+  status: z.enum(['terjadwal', 'dalam_pengiriman', 'diterima', 'gagal']).optional().default('terjadwal'),
+  catatan: z.string().nullable().optional(),
+  kurir_id: z.number().int().optional().nullable(),
+});
+
 module.exports = {
   loginSchema,
   registerSchema,
@@ -104,5 +117,6 @@ module.exports = {
   changePasswordSchema,
   insidenSchema,
   stokSchema,
+  jadwalSchema,
   validate
 };

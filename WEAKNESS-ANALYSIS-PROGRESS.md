@@ -2,8 +2,8 @@
 
 > **Tanggal Analisis Terakhir:** 12 Mei 2026 (UPDATED)  
 > **Total Item:** 21  
-> **Fixed:** 13/21 (62%)  
-> **Pending:** 8/21 (38%)  
+> **Fixed:** 15/21 (71%)  
+> **Pending:** 6/21 (29%)  
 
 ---
 
@@ -12,13 +12,13 @@
 | Kategori | Fixed | Pending | Completion |
 |----------|-------|---------|------------|
 | **KRITIS** (High) | 7/9 | 2 | 78% |
-| **PENTING** (Medium) | 2/5 | 3 | 40% |
+| **PENTING** (Medium) | 4/5 | 1 | 80% |
 | **REKOMENDASI** (Low) | 4/7 | 3 | 57% |
-| **TOTAL** | **13/21** | **8** | **62%** |
+| **TOTAL** | **15/21** | **6** | **71%** |
 
 ---
 
-## ✅ SUDAH DIPERBAIKI (13/21)
+## ✅ SUDAH DIPERBAIKI (15/21)
 
 ### 1. ✅ Relasi User Supplier ↔ Data Dapur
 - **Status:** FIXED
@@ -26,28 +26,20 @@
 
 ...
 
-### 9. ✅ Implementasi Knex.js (SQL Transformation Fix)
+### 12. ✅ Implementasi Soft Delete
 - **Status:** FIXED
-- **Implementasi:** Mengganti logika `transformQuery` manual dengan **Knex.js** sebagai query builder utama.
+- **Implementasi:** Menambahkan kolom `deleted_at` pada seluruh tabel utama.
 
-### 10. ✅ Konfigurasi CORS Terpusat & Dinamis
+### 14. ✅ Error Boundary Frontend
 - **Status:** FIXED
-- **Implementasi:** Menghapus URL frontend hardcoded di `vercel.json`, `server.js`, dan `api/index.js`. Sekarang menggunakan middleware `cors` yang mendukung multiple origins (`localhost`, domain produksi, dan `FRONTEND_URL` dari env). Konfigurasi terpusat di `api/index.js`.
+- **Implementasi:** Menambahkan komponen **ErrorBoundary** global untuk menangkap kesalahan runtime JavaScript di frontend. Hal ini mencegah aplikasi "crash" menjadi layar putih total dan memberikan antarmuka yang ramah bagi pengguna untuk memuat ulang halaman atau kembali ke dashboard.
 
-### 11. ✅ Implementasi Pagination
+### 17. ✅ Implementasi Notifikasi Modern (Sonner)
 ...
-
-### 20. ✅ Inkosistensi & Duplikasi Entry Point Backend
-- **Status:** FIXED
-- **Implementasi:** Backend dikonsolidasi dengan arsitektur **Unified Entry Point**.
-
-### 21. ✅ Sinkronisasi Branding Halaman Login (New)
-- **Status:** FIXED
-- **Implementasi:** Halaman login sekarang sinkron dengan pengaturan aplikasi (Logo, Nama, Instansi) secara dinamis dari database.
 
 ---
 
-## ❌ BELUM DIPERBAIKI (8/21)
+## ❌ BELUM DIPERBAIKI (6/21)
 
 ### 🔴 KRITIS (High Priority)
 
@@ -58,14 +50,8 @@
 
 ### 🟡 PENTING (Medium Priority)
 
-#### 12. ❌ Hard Delete (Tanpa Soft Delete)
-- **Masalah:** Sekali hapus, data hilang selamanya.
-
 #### 13. ❌ Tanpa Audit Trail
 - **Masalah:** Tidak ada log perubahan data sensitif.
-
-#### 14. ❌ Error Boundary Frontend Missing
-- **Masalah:** Jika ada error React, layar menjadi putih total.
 
 ---
 
@@ -89,7 +75,7 @@
 ## 🎯 Rekomendasi Prioritas Perbaikan Selanjutnya
 
 1. **SECURITY (Item 7):** Perkuat aturan password (minimal 1 huruf besar, 1 angka).
-2. **RELIABILITY (Item 14):** Tambahkan React Error Boundary di frontend.
+2. **AUDIT (Item 13):** Implementasi tabel audit_logs untuk mencatat perubahan data.
 3. **FEATURE (Item 18):** Implementasi export data ke Excel/PDF.
 
 ---

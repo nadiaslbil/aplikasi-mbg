@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { all, get, run } = require('../database');
+const { db } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
 const { requireRole, permissions } = require('../middleware/rbac');
 
@@ -12,35 +12,27 @@ router.get('/', authenticateToken, async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
     
-    let baseQuery = `
-      FROM pengiriman p
-      JOIN jadwal_distribusi jd ON p.jadwal_id = jd.id
-      JOIN dapur_supplier ds ON jd.dapur_id = ds.id
-      JOIN sekolah s ON jd.sekolah_id = s.id
-      WHERE 1=1
-    `;
-    const params = [];
+    let query = db('pengiriman as p')
+      .join('jadwal_distribusi as jd', 'p.jadwal_id', 'jd.id')
+      .join('dapur_supplier as ds', 'jd.dapur_id', 'ds.id')
+      .join('sekolah as s', 'jd.sekolah_id', 's.id')
+      .whereNull('p.deleted_at');
 
-    if (status) {
-      baseQuery += ' AND p.status = ?';
-      params.push(status);
-    }
-
-    if (jadwal_id) {
-      baseQuery += ' AND p.jadwal_id = ?';
-      params.push(jadwal_id);
-    }
+    if (status) query = query.where({ 'p.status': status });
+    if (jadwal_id) query = query.where({ 'p.jadwal_id': jadwal_id });
 
     if (req.user?.role === 'supplier' || req.user?.role === 'kurir') {
       let accessibleDapurIds = [];
       if (req.user.role === 'supplier') {
-        const rows = await all('SELECT id FROM dapur_supplier WHERE user_id = ?', [req.user.id]);
+        const rows = await db('dapur_supplier')
+          .select('id')
+          .where({ user_id: req.user.id })
+          .whereNull('deleted_at');
         accessibleDapurIds = rows.map((r) => r.id);
       } else {
-        const rows = await all(
-          "SELECT dapur_id FROM dapur_kurir WHERE kurir_id = ? AND status = 'aktif'",
-          [req.user.id]
-        );
+        const rows = await db('dapur_kurir')
+          .select('dapur_id')
+          .where({ kurir_id: req.user.id, status: 'aktif' });
         accessibleDapurIds = rows.map((r) => r.dapur_id);
       }
 
@@ -54,30 +46,23 @@ router.get('/', authenticateToken, async (req, res) => {
         });
       }
 
-      const placeholders = accessibleDapurIds.map(() => '?').join(', ');
-      baseQuery += ` AND jd.dapur_id IN (${placeholders})`;
-      params.push(...accessibleDapurIds);
+      query = query.whereIn('jd.dapur_id', accessibleDapurIds);
 
-      // Kurir tetap dibatasi ke pengiriman miliknya di dalam dapur ter-relasi
       if (req.user.role === 'kurir') {
-        baseQuery += ' AND p.kurir_id = ?';
-        params.push(req.user.id);
+        query = query.where({ 'p.kurir_id': req.user.id });
       }
     }
 
     // Get total count
-    const countResult = await get(`SELECT COUNT(*) as total ${baseQuery}`, params);
-    const total = countResult.total;
+    const totalCount = await query.clone().count('* as total').first();
+    const total = totalCount.total;
 
-    let query = `
-      SELECT p.*, jd.tanggal, jd.waktu_kirim,
-             ds.nama as dapur_nama, s.nama as sekolah_nama
-      ${baseQuery}
-      ORDER BY p.created_at DESC
-      LIMIT ? OFFSET ?
-    `;
+    const pengiriman = await query
+      .select('p.*', 'jd.tanggal', 'jd.waktu_kirim', 'ds.nama as dapur_nama', 's.nama as sekolah_nama')
+      .orderBy('p.created_at', 'desc')
+      .limit(limit)
+      .offset(offset);
 
-    const pengiriman = await all(query, [...params, limit, offset]);
     res.json({
       data: pengiriman,
       total,
@@ -94,20 +79,20 @@ router.get('/', authenticateToken, async (req, res) => {
 // Get pengiriman by id
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
-    const query = `
-      SELECT p.*, jd.tanggal, jd.waktu_kirim,
-             ds.nama as dapur_nama, ds.latitude as dapur_latitude, ds.longitude as dapur_longitude,
-             s.nama as sekolah_nama, s.latitude as sekolah_latitude, s.longitude as sekolah_longitude,
-             u.nama as kurir_nama
-      FROM pengiriman p
-      JOIN jadwal_distribusi jd ON p.jadwal_id = jd.id
-      JOIN dapur_supplier ds ON jd.dapur_id = ds.id
-      JOIN sekolah s ON jd.sekolah_id = s.id
-      JOIN users u ON p.kurir_id = u.id
-      WHERE p.id = ?
-    `;
-    
-    const pengiriman = await get(query, [req.params.id]);
+    const pengiriman = await db('pengiriman as p')
+      .join('jadwal_distribusi as jd', 'p.jadwal_id', 'jd.id')
+      .join('dapur_supplier as ds', 'jd.dapur_id', 'ds.id')
+      .join('sekolah as s', 'jd.sekolah_id', 's.id')
+      .join('users as u', 'p.kurir_id', u.id)
+      .select(
+        'p.*', 'jd.tanggal', 'jd.waktu_kirim',
+        'ds.nama as dapur_nama', 'ds.latitude as dapur_latitude', 'ds.longitude as dapur_longitude',
+        's.nama as sekolah_nama', 's.latitude as sekolah_latitude', 's.longitude as sekolah_longitude',
+        'u.nama as kurir_nama'
+      )
+      .where({ 'p.id': req.params.id })
+      .whereNull('p.deleted_at')
+      .first();
     
     if (!pengiriman) {
       return res.status(404).json({ error: 'Pengiriman tidak ditemukan' });
@@ -115,6 +100,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 
     res.json(pengiriman);
   } catch (error) {
+    console.error('Get single pengiriman error:', error);
     res.status(500).json({ error: 'Terjadi kesalahan server' });
   }
 });
@@ -124,24 +110,18 @@ router.post('/', authenticateToken, requireRole(permissions.pengiriman.create), 
   try {
     const { jadwal_id, kurir_id } = req.body;
 
-    if (!jadwal_id || !kurir_id) {
-      return res.status(400).json({ error: 'Data tidak lengkap' });
-    }
-
-    const result = await run(
-      `
-        INSERT INTO pengiriman (jadwal_id, kurir_id, status)
-        VALUES (?, ?, 'dalam_perjalanan')
-      `,
-      [jadwal_id, kurir_id]
-    );
+    const [id] = await db('pengiriman').insert({
+      jadwal_id,
+      kurir_id,
+      status: 'dalam_perjalanan'
+    }).returning('id');
 
     // Update jadwal status
-    await run('UPDATE jadwal_distribusi SET status = ? WHERE id = ?', ['dalam_pengiriman', jadwal_id]);
+    await db('jadwal_distribusi').where({ id: jadwal_id }).update({ status: 'dalam_pengiriman' });
 
     res.status(201).json({
       message: 'Pengiriman berhasil dibuat',
-      id: result.lastID,
+      id: typeof id === 'object' ? id.id : id,
     });
   } catch (error) {
     console.error('Create pengiriman error:', error);
@@ -154,50 +134,33 @@ router.put('/:id', authenticateToken, requireRole(permissions.pengiriman.updateS
   try {
     const { latitude, longitude, status, bukti_foto, catatan, waktu_berangkat, waktu_tiba } = req.body;
 
-    const existing = await get('SELECT * FROM pengiriman WHERE id = ?', [req.params.id]);
+    const existing = await db('pengiriman').where({ id: req.params.id }).whereNull('deleted_at').first();
     
     if (!existing) {
       return res.status(404).json({ error: 'Pengiriman tidak ditemukan' });
     }
 
-    // Ownership check: Kurir can only update their own delivery
     if (req.user.role === 'kurir' && existing.kurir_id !== req.user.id) {
       return res.status(403).json({ error: 'Anda hanya bisa mengupdate pengiriman Anda sendiri' });
     }
 
-    await run(
-      `
-        UPDATE pengiriman 
-        SET latitude = ?, longitude = ?, status = ?, bukti_foto = ?, 
-            catatan = ?, waktu_berangkat = ?, waktu_tiba = ?,
-            updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?
-      `,
-      [
-        latitude || null,
-        longitude || null,
-        status,
-        bukti_foto || null,
-        catatan || null,
-        waktu_berangkat || null,
-        waktu_tiba || null,
-        req.params.id,
-      ]
-    );
+    await db('pengiriman')
+      .where({ id: req.params.id })
+      .update({
+        latitude: latitude !== undefined ? latitude : existing.latitude,
+        longitude: longitude !== undefined ? longitude : existing.longitude,
+        status: status || existing.status,
+        bukti_foto: bukti_foto || existing.bukti_foto,
+        catatan: catatan !== undefined ? catatan : existing.catatan,
+        waktu_berangkat: waktu_berangkat || existing.waktu_berangkat,
+        waktu_tiba: waktu_tiba || existing.waktu_tiba,
+        updated_at: db.fn.now()
+      });
 
-    // If status is 'diterima', update jadwal
     if (status === 'diterima') {
-      const pengiriman = await get('SELECT jadwal_id FROM pengiriman WHERE id = ?', [req.params.id]);
-      if (pengiriman?.jadwal_id) {
-        await run(
-          `
-            UPDATE jadwal_distribusi 
-            SET status = 'diterima', waktu_terima = CURRENT_TIMESTAMP 
-            WHERE id = ?
-          `,
-          [pengiriman.jadwal_id]
-        );
-      }
+      await db('jadwal_distribusi')
+        .where({ id: existing.jadwal_id })
+        .update({ status: 'diterima', waktu_terima: db.fn.now() });
     }
 
     res.json({ message: 'Pengiriman berhasil diupdate' });
@@ -207,73 +170,64 @@ router.put('/:id', authenticateToken, requireRole(permissions.pengiriman.updateS
   }
 });
 
-// Update lokasi kurir (compat endpoint for frontend live tracking)
+// Update lokasi kurir
 router.put('/:id/location', authenticateToken, requireRole(permissions.pengiriman.updateStatus), async (req, res) => {
   try {
     const { latitude, longitude, status, catatan } = req.body;
-    const existing = await get('SELECT * FROM pengiriman WHERE id = ?', [req.params.id]);
+    const existing = await db('pengiriman').where({ id: req.params.id }).whereNull('deleted_at').first();
 
     if (!existing) {
       return res.status(404).json({ error: 'Pengiriman tidak ditemukan' });
     }
 
-    // Ownership check: Kurir can only update their own location
     if (req.user.role === 'kurir' && existing.kurir_id !== req.user.id) {
       return res.status(403).json({ error: 'Anda hanya bisa mengupdate lokasi pengiriman Anda sendiri' });
     }
 
-    await run(
-      `
-        UPDATE pengiriman
-        SET latitude = ?, longitude = ?, status = ?, catatan = ?, updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?
-      `,
-      [latitude || null, longitude || null, status || 'dalam_perjalanan', catatan || null, req.params.id]
-    );
+    await db('pengiriman')
+      .where({ id: req.params.id })
+      .update({
+        latitude: latitude !== undefined ? latitude : existing.latitude,
+        longitude: longitude !== undefined ? longitude : existing.longitude,
+        status: status || existing.status,
+        catatan: catatan !== undefined ? catatan : existing.catatan,
+        updated_at: db.fn.now()
+      });
 
-    // Keep jadwal status in sync when delivery completed via location endpoint
     if (status === 'diterima') {
-      const pengiriman = await get('SELECT jadwal_id FROM pengiriman WHERE id = ?', [req.params.id]);
-      if (pengiriman?.jadwal_id) {
-        await run(
-          `
-            UPDATE jadwal_distribusi
-            SET status = 'diterima', waktu_terima = CURRENT_TIMESTAMP
-            WHERE id = ?
-          `,
-          [pengiriman.jadwal_id]
-        );
-      }
+      await db('jadwal_distribusi')
+        .where({ id: existing.jadwal_id })
+        .update({ status: 'diterima', waktu_terima: db.fn.now() });
     }
 
     res.json({ message: 'Lokasi berhasil diupdate' });
   } catch (error) {
-    console.error('Update lokasi pengiriman error:', error);
+    console.error('Update lokasi error:', error);
     res.status(500).json({ error: 'Terjadi kesalahan server' });
   }
 });
 
-// Get kurir locations for real-time tracking
+// Get active courier locations
 router.get('/tracking/active', authenticateToken, async (req, res) => {
   try {
-    const query = `
-      SELECT p.id, p.latitude, p.longitude, p.status, p.kurir_id, p.catatan, p.updated_at,
-             u.nama as kurir_nama, jd.tanggal,
-             s.nama as sekolah_nama, s.latitude as sekolah_lat, s.longitude as sekolah_lng
-      FROM pengiriman p
-      JOIN users u ON p.kurir_id = u.id
-      JOIN jadwal_distribusi jd ON p.jadwal_id = jd.id
-      JOIN sekolah s ON jd.sekolah_id = s.id
-      WHERE p.status = 'dalam_perjalanan'
-      AND p.latitude IS NOT NULL
-      AND p.longitude IS NOT NULL
-      ORDER BY p.updated_at DESC
-    `;
-    
-    const couriers = await all(query);
+    const couriers = await db('pengiriman as p')
+      .join('users as u', 'p.kurir_id', 'u.id')
+      .join('jadwal_distribusi as jd', 'p.jadwal_id', 'jd.id')
+      .join('sekolah as s', 'jd.sekolah_id', 's.id')
+      .select(
+        'p.id', 'p.latitude', 'p.longitude', 'p.status', 'p.kurir_id', 'p.catatan', 'p.updated_at',
+        'u.nama as kurir_nama', 'jd.tanggal',
+        's.nama as sekolah_nama', 's.latitude as sekolah_lat', 's.longitude as sekolah_lng'
+      )
+      .where({ 'p.status': 'dalam_perjalanan' })
+      .whereNotNull('p.latitude')
+      .whereNotNull('p.longitude')
+      .whereNull('p.deleted_at')
+      .orderBy('p.updated_at', 'desc');
+
     res.json(couriers);
   } catch (error) {
-    console.error('Get tracking error:', error);
+    console.error('Get tracking active error:', error);
     res.status(500).json({ error: 'Terjadi kesalahan server' });
   }
 });
