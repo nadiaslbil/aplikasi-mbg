@@ -45,7 +45,6 @@ const allMenuItems: MenuItem[] = [
   { href: '/dashboard', icon: BarChart3, label: 'Dashboard', roles: ['admin_bgn', 'admin_daerah'] },
   { href: '/dashboard/kurir', icon: Truck, label: 'Dashboard Kurir', roles: ['kurir'] },
   { href: '/dashboard/supplier', icon: Store, label: 'Dashboard Dapur', roles: ['supplier'] },
-  { href: '/dashboard/banjarnegara', icon: MapPin, label: 'Peta Banjarnegara', roles: ['admin_bgn', 'admin_daerah'] },
   { href: '/dashboard/sekolah', icon: School, label: 'Data Sekolah', roles: ['admin_bgn', 'admin_daerah', 'kurir', 'supplier'] },
   { href: '/dashboard/dapur', icon: Store, label: 'Data Dapur', roles: ['admin_bgn', 'admin_daerah', 'supplier'] },
   { href: '/dashboard/assign-kurir', icon: UserCheck, label: 'Penugasan Kurir', roles: ['admin_bgn', 'admin_daerah'] },

@@ -236,70 +236,16 @@ export default function BanjarnegaraMapImpl() {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Filter controls */}
-      <div className="flex flex-wrap gap-2">
-        <button
-          onClick={() => setShowKecamatan(!showKecamatan)}
-          className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 ${
-            showKecamatan ? 'bg-amber-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-        >
-          <MapPin size={18} />
-          Batas Kecamatan ({geojson?.features.length || 0})
-        </button>
-        <button
-          onClick={() => setShowSekolah(!showSekolah)}
-          className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 ${
-            showSekolah ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-        >
-          <School size={18} />
-          Sekolah ({mapData?.sekolah.length || 0})
-        </button>
-        <button
-          onClick={() => setShowDapur(!showDapur)}
-          className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 ${
-            showDapur ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-        >
-          <Store size={18} />
-          Dapur ({mapData?.dapur.length || 0})
-        </button>
-        <button
-          onClick={() => setShowCourier(!showCourier)}
-          className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 ${
-            showCourier ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-        >
-          <Truck size={18} />
-          Kurir Live ({liveCouriers.length})
-          {isConnected && (
-            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-          )}
-        </button>
-      </div>
-
-      {/* Info banner */}
-      <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4">
-        <div className="flex items-start gap-3">
-          <MapPin size={32} className="text-amber-600 flex-shrink-0 mt-1" />
-          <div>
-            <h3 className="font-bold text-amber-800 mb-1">Peta Distribusi MBG - Kabupaten Banjarnegara</h3>
-            <p className="text-sm text-amber-700">
-              Menampilkan batas kecamatan, lokasi sekolah penerima MBG, dan dapur supplier di wilayah Banjarnegara, Jawa Tengah.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Map */}
-      <div className="h-[700px] rounded-lg overflow-hidden shadow-lg border-2 border-gray-200">
+    <div className="w-full h-full">
+      {/* Map Container */}
+      <div className="h-[70vh] min-h-[650px] overflow-hidden bg-zinc-50 relative">
         <MapContainer
           center={BANJARNEGARA_CENTER}
           zoom={11}
           style={{ height: '100%', width: '100%' }}
+          zoomControl={false}
         >
+          <L.Control.Zoom position="bottomright" />
           <MapUpdater center={BANJARNEGARA_CENTER} />
           
           <LayersControl position="topright">
@@ -437,58 +383,6 @@ export default function BanjarnegaraMapImpl() {
           </LayersControl>
         </MapContainer>
       </div>
-
-      {/* Legend */}
-      <div className="bg-gray-50 p-4 rounded-lg">
-        <h4 className="font-semibold mb-2">Keterangan:</h4>
-        <div className="flex flex-wrap gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 border-2 border-dashed border-amber-600 bg-amber-100 rounded"></div>
-            <span className="text-sm">Batas Kecamatan Banjarnegara</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <IconCircle icon="school" size={18} color="green" />
-            <span className="text-sm">Sekolah Penerima MBG</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <IconCircle icon="store" size={18} color="blue" />
-            <span className="text-sm">Dapur/Supplier</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center border-2 border-white shadow-lg">
-              <Truck size={16} className="text-white" />
-            </div>
-            <span className="text-sm">Kurir (Live Tracking)</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Kecamatan list */}
-      {geojson && (
-        <div className="bg-white rounded-lg shadow p-4">
-          <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-            <ListFilter size={20} />
-            Daftar Kecamatan di Banjarnegara (Sumber: BIG)
-          </h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {geojson.features.map((feature: any, index: number) => {
-              const props = feature.properties;
-              const nama = props.WADMKC || props.NAMOBJ || 'Unknown';
-              const luas = props.LUAS || props.LUASWH;
-              return (
-                <div key={index} className="bg-gray-50 rounded p-3 text-sm hover:bg-amber-50 transition">
-                  <p className="font-medium text-gray-800">{nama}</p>
-                  {luas && (
-                    <p className="text-xs text-gray-500">
-                      Luas: {(typeof luas === 'number' ? (luas / 1000000).toFixed(2) : luas)} km²
-                    </p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -67,16 +67,37 @@ export default function DashboardPage() {
 
   return (
     <AdminLayout currentPage="/dashboard" title="Dashboard" description="Ringkasan distribusi MBG Kabupaten Banjarnegara">
-      {/* Map */}
-      <div className="card mb-6">
-        <div className="px-5 py-4 border-b border-zinc-200/80">
-          <div className="flex items-center gap-2">
-            <MapPin size={18} className="text-zinc-500" />
-            <h2 className="text-base font-semibold text-zinc-900">Peta Distribusi MBG</h2>
+      {/* Map Section */}
+      <div className="card mb-8 overflow-hidden border-none shadow-sm bg-white">
+        <div className="px-6 py-5 border-b border-zinc-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                <MapPin size={18} className="text-blue-600" />
+              </div>
+              <h2 className="text-lg font-bold text-zinc-900 tracking-tight">Peta Distribusi MBG</h2>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-zinc-500 font-medium">
+              <span>20 Kecamatan</span>
+              <span className="text-zinc-300">•</span>
+              <span>{stats?.sekolah.total_aktif || 0} Sekolah</span>
+              <span className="text-zinc-300">•</span>
+              <span>{stats?.dapur.total_aktif || 0} Dapur</span>
+              <span className="text-zinc-300">•</span>
+              <span className="flex items-center gap-1.5">
+                <span className={`w-2 h-2 rounded-full ${stats?.jadwal_hari_ini.dalam_pengiriman ? 'bg-orange-500 animate-pulse' : 'bg-zinc-300'}`}></span>
+                {stats?.jadwal_hari_ini.dalam_pengiriman || 0} Kurir Aktif
+              </span>
+            </div>
           </div>
-          <p className="text-sm text-zinc-500 mt-0.5">20 Kecamatan &middot; Data Sekolah & Dapur se-Kabupaten Banjarnegara</p>
+          
+          <div className="flex items-center gap-3">
+            <div className="text-xs font-semibold px-3 py-1.5 bg-zinc-100 text-zinc-600 rounded-full border border-zinc-200 uppercase tracking-wider">
+              Live Monitoring
+            </div>
+          </div>
         </div>
-        <div className="p-5">
+        <div className="p-0">
           <BanjarnegaraMap />
         </div>
       </div>
