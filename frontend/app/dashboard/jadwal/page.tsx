@@ -14,6 +14,8 @@ interface Jadwal {
   id: number;
   dapur_id: number;
   sekolah_id: number;
+  kurir_id: number | null;
+  assigned_kurir_id: number | null;
   tanggal: string;
   waktu_kirim: string;
   jumlah_porsi: number;
@@ -272,14 +274,15 @@ export default function JadwalPage() {
       setStartingDelivery(jadwalId);
       
       // Jika user adalah kurir, otomatis pakai ID mereka
-      // Jika admin, prompt untuk ID kurir (jika tidak disediakan)
+      // Jika admin, gunakan kurirId yang sudah tercantum (dari parameter)
       let finalKurirId = kurirId;
       if (user?.role === 'kurir') {
         finalKurirId = user.id;
-      } else if (!finalKurirId) {
-        const kurirInput = prompt('Masukkan ID Kurir:');
-        if (!kurirInput) return;
-        finalKurirId = parseInt(kurirInput);
+      } 
+      
+      if (!finalKurirId) {
+        toast.error('ID Kurir tidak ditemukan. Pastikan kurir sudah ditugaskan.');
+        return;
       }
 
       await api.post('/pengiriman', { jadwal_id: jadwalId, kurir_id: finalKurirId });
@@ -483,7 +486,7 @@ export default function JadwalPage() {
                         {/* Tombol Mulai Pengiriman - Admin & Kurir bisa mulai */}
                         {jadwal.status === 'terjadwal' && (canCreateJadwal || isKurir) && (
                           <button
-                            onClick={() => handleStartDelivery(jadwal.id)}
+                            onClick={() => handleStartDelivery(jadwal.id, jadwal.assigned_kurir_id || undefined)}
                             disabled={startingDelivery === jadwal.id}
                             className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm font-medium transition-colors"
                             title="Mulai Pengiriman"

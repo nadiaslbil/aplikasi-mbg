@@ -76,7 +76,8 @@ router.get('/', authenticateToken, async (req, res) => {
         's.alamat as sekolah_alamat',
         's.latitude as sekolah_latitude', 
         's.longitude as sekolah_longitude',
-        db.raw('COALESCE(pu.nama, du.nama) as kurir_nama')
+        db.raw('COALESCE(pu.nama, du.nama) as kurir_nama'),
+        db.raw('COALESCE(jd.kurir_id, p.kurir_id, dkm.kurir_id) as assigned_kurir_id')
       )
       .orderBy('jd.tanggal', 'desc')
       .orderBy('jd.waktu_kirim', 'asc')
@@ -190,20 +191,17 @@ router.post('/generate-weekly', authenticateToken, requireRole(permissions.jadwa
         schoolsForToday.sort((a, b) => a.distance - b.distance);
 
         // 2. Group schools for couriers (Load Balancing)
-        // If we have 3 couriers and 6 schools, each gets 2.
         const numCouriers = kitchenCouriers.length || 1;
         const schoolsPerCourier = Math.ceil(schoolsForToday.length / numCouriers);
 
         for (let i = 0; i < schoolsForToday.length; i++) {
           const rel = schoolsForToday[i];
           
-          // Prevent duplication
           if (existingMap.has(`${date}_${rel.dapur_id}_${rel.sekolah_id}`)) {
             results.skipped++;
             continue;
           }
 
-          // Track Capacity
           const capKey = `${rel.dapur_id}_${date}`;
           capacityTracker[capKey] = (capacityTracker[capKey] || 0) + rel.jumlah_porsi;
           if (capacityTracker[capKey] > rel.kapasitas_harian) {
@@ -211,13 +209,11 @@ router.post('/generate-weekly', authenticateToken, requireRole(permissions.jadwa
             if (!results.warnings.includes(warn)) results.warnings.push(warn);
           }
 
-          // 3. Assign Courier based on cluster
           const courierIdx = Math.floor(i / schoolsPerCourier);
           const assignedKurir = kitchenCouriers[courierIdx] || kitchenCouriers[0];
           const kurirNama = assignedKurir ? assignedKurir.kurir_nama : 'Belum ada';
+          const assignedKurirId = assignedKurir ? assignedKurir.kurir_id : null;
 
-          // 4. Dynamic Timing (OFFSET)
-          // Each stop in the courier's route adds 30 minutes.
           const stopInRoute = i % schoolsPerCourier;
           const baseMinutes = 7 * 60; // 07:00
           const offsetMinutes = stopInRoute * 30; // 30 mins per stop
@@ -230,6 +226,7 @@ router.post('/generate-weekly', authenticateToken, requireRole(permissions.jadwa
           const [id] = await trx('jadwal_distribusi').insert({
             dapur_id: rel.dapur_id,
             sekolah_id: rel.sekolah_id,
+            kurir_id: assignedKurirId,
             tanggal: date,
             waktu_kirim: waktuKirim,
             jumlah_porsi: rel.jumlah_porsi,
@@ -277,7 +274,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
       .join('dapur_supplier as ds', 'jd.dapur_id', 'ds.id')
       .join('sekolah as s', 'jd.sekolah_id', 's.id')
       .leftJoin('pengiriman as p', 'p.jadwal_id', 'jd.id')
-      .leftJoin('users as pu', 'p.kurir_id', pu.id)
+      .leftJoin('users as pu', 'p.kurir_id', 'pu.id')
       .leftJoin(
         db('dapur_kurir')
           .select('dapur_id', db.raw('MIN(kurir_id) as kurir_id'))
@@ -294,7 +291,8 @@ router.get('/:id', authenticateToken, async (req, res) => {
         's.latitude as sekolah_latitude', 
         's.longitude as sekolah_longitude',
         's.kontak as sekolah_kontak',
-        db.raw('COALESCE(pu.nama, du.nama) as kurir_nama')
+        db.raw('COALESCE(pu.nama, du.nama) as kurir_nama'),
+        db.raw('COALESCE(jd.kurir_id, p.kurir_id, dkm.kurir_id) as assigned_kurir_id')
       )
       .where({ 'jd.id': req.params.id })
       .whereNull('jd.deleted_at')
@@ -336,6 +334,7 @@ router.post('/', authenticateToken, requireRole(permissions.jadwal.create), vali
     const [id] = await db('jadwal_distribusi').insert({
       dapur_id, 
       sekolah_id, 
+      kurir_id: kurir_id || null,
       tanggal, 
       waktu_kirim: waktu_kirim || null, 
       jumlah_porsi, 
@@ -399,6 +398,7 @@ router.put('/:id', authenticateToken, requireRole(permissions.jadwal.update), va
     const updatePayload = {
       dapur_id: finalDapurId,
       sekolah_id: finalSekolahId,
+      kurir_id: kurir_id !== undefined ? kurir_id : existing.kurir_id,
       tanggal: tanggal || existing.tanggal,
       waktu_kirim: waktu_kirim !== undefined ? waktu_kirim : existing.waktu_kirim,
       waktu_terima: waktu_terima !== undefined ? waktu_terima : existing.waktu_terima,
