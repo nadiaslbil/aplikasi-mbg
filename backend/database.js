@@ -1,7 +1,6 @@
-const { Pool } = require("pg");
-const path = require("path");
-const bcrypt = require("bcryptjs");
-const dotenv = require("dotenv");
+const knexLib = require('knex');
+const path = require('path');
+const dotenv = require('dotenv');
 
 dotenv.config();
 
@@ -11,124 +10,85 @@ if (rawUrl) {
 }
 
 const isPostgres = !!rawUrl;
-let db;
-let pool;
 
+const config = isPostgres 
+  ? {
+      client: 'pg',
+      connection: {
+        connectionString: rawUrl,
+        ssl: { rejectUnauthorized: false }
+      },
+      pool: { min: 2, max: 10 }
+    }
+  : {
+      client: 'sqlite3',
+      connection: {
+        filename: path.join(__dirname, 'mbg_distribution.db')
+      },
+      useNullAsDefault: true
+    };
+
+const knex = knexLib(config);
+
+// Log connection status
 if (isPostgres) {
-  pool = new Pool({
-    connectionString: rawUrl,
-    ssl: {
-      rejectUnauthorized: false,
-    },
-  });
-
-  // Tes koneksi untuk memastikan tidak ada error saat startup
-  pool.connect((err, client, release) => {
-    if (err) {
-      console.error("❌ Gagal koneksi ke Postgres:", err.stack);
-    } else {
-      console.log("✅ Berhasil koneksi ke Vercel Postgres");
-      release();
-    }
-  });
+  knex.raw('SELECT 1')
+    .then(() => console.log('✅ Connected to Vercel Postgres via Knex'))
+    .catch(err => console.error('❌ Postgres connection error:', err.message));
 } else {
-  // Only load sqlite3 in local dev to avoid Vercel build issues
-  try {
-    const sqlite3 = require("sqlite3").verbose();
-    const DB_PATH = path.join(__dirname, "mbg_distribution.db");
-    db = new sqlite3.Database(DB_PATH);
-    console.log("✅ Connected to SQLite database");
-  } catch (err) {
-    console.warn("SQLite not available, but that is okay if you are on Vercel with Postgres.");
-  }
+  console.log('✅ Connected to SQLite database via Knex');
 }
 
-// Helper to convert SQLite syntax to Postgres
-function transformQuery(sql) {
-  if (!isPostgres) return sql;
-
-  // Ganti ? dengan $1, $2, dll
-  let paramIndex = 0;
-  let pgSql = sql.replace(/\?/g, () => {
-    paramIndex += 1;
-    return `$${paramIndex}`;
-  });
-
-  // Tambahkan casting ::text untuk parameter pencarian umum agar Postgres tidak bingung
-  // Terutama untuk query WHERE ... = ?
-  if (pgSql.includes("WHERE email = $1")) {
-    pgSql = pgSql.replace("WHERE email = $1", "WHERE email = $1::text");
-  }
-
-  // Basic type and function replacements
-  pgSql = pgSql
-    .replace(/INTEGER PRIMARY KEY AUTOINCREMENT/gi, "SERIAL PRIMARY KEY")
-    .replace(/DATETIME DEFAULT CURRENT_TIMESTAMP/gi, "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
-    .replace(/REAL/gi, "DOUBLE PRECISION")
-    .replace(/strftime\('%Y-%m', tanggal\)/gi, "TO_CHAR(tanggal::date, 'YYYY-MM')")
-    .replace(/strftime\('%Y-%m', 'now'\)/gi, "TO_CHAR(CURRENT_DATE, 'YYYY-MM')")
-    .replace(/date\('now', '\+3 days'\)/gi, "(CURRENT_DATE + INTERVAL '3 days')")
-    .replace(/date\('now', '-30 days'\)/gi, "(CURRENT_DATE - INTERVAL '30 days')");
-
-  return pgSql;
-}
-
+/**
+ * Bridge function to maintain compatibility with raw SQL queries.
+ * Knex handles ? to $1 conversion for Postgres automatically.
+ */
 async function run(sql, params = []) {
-  if (isPostgres) {
-    let pgSql = transformQuery(sql);
-    const isInsert = pgSql.trim().toUpperCase().startsWith("INSERT");
-    const hasReturning = pgSql.toUpperCase().includes("RETURNING");
-    const isSettings = pgSql.toUpperCase().includes("INTO SETTINGS");
+  const isInsert = sql.trim().toUpperCase().startsWith('INSERT');
+  const isSettings = sql.toUpperCase().includes('INTO SETTINGS');
+  
+  let finalSql = sql;
+  
+  // Handle Postgres RETURNING for lastID compatibility
+  if (isPostgres && isInsert && !isSettings && !sql.toUpperCase().includes('RETURNING')) {
+    finalSql += ' RETURNING id';
+  }
 
-    if (isInsert && !hasReturning && !isSettings) {
-      pgSql += " RETURNING id";
-    }
-    
-    const result = await pool.query(pgSql, params);
-    return { 
-      lastID: (isInsert && !isSettings) ? result.rows[0]?.id || null : null, 
-      changes: result.rowCount 
+  const result = await knex.raw(finalSql, params);
+
+  if (isPostgres) {
+    return {
+      lastID: (isInsert && !isSettings) ? (result.rows[0]?.id || null) : null,
+      changes: result.rowCount
     };
   } else {
-    return new Promise((resolve, reject) => {
-      db.run(sql, params, function (err) {
-        if (err) reject(err);
-        else resolve({ lastID: this.lastID, changes: this.changes });
-      });
-    });
+    // SQLite result structure via Knex
+    return {
+      lastID: (isInsert && !isSettings) ? result[0] : null,
+      changes: result.length // In SQLite, knex.raw for INSERT returns [lastID]
+    };
   }
 }
 
 async function get(sql, params = []) {
+  const result = await knex.raw(sql, params);
   if (isPostgres) {
-    const result = await pool.query(transformQuery(sql), params);
     return result.rows[0] || null;
   } else {
-    return new Promise((resolve, reject) => {
-      db.get(sql, params, (err, row) => {
-        if (err) reject(err);
-        else resolve(row);
-      });
-    });
+    return result[0] || null;
   }
 }
 
 async function all(sql, params = []) {
-  if (isPostgres) {
-    const result = await pool.query(transformQuery(sql), params);
-    return result.rows;
-  } else {
-    return new Promise((resolve, reject) => {
-      db.all(sql, params, (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows);
-      });
-    });
-  }
+  const result = await knex.raw(sql, params);
+  return isPostgres ? result.rows : result;
 }
 
-const initTables = async () => {
-  // Logic remains for creating tables if needed
+module.exports = { 
+  knex, 
+  db: knex, // Alias for new code
+  run, 
+  get, 
+  all, 
+  isPostgres 
 };
-
-module.exports = { pool, db, run, get, all, isPostgres, initTables };

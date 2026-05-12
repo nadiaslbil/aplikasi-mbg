@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const { get, run } = require("../database");
+const { db } = require("../database"); // Use 'db' which is the knex instance
 const { authenticateToken } = require("../middleware/auth");
 const { requireRole } = require("../middleware/rbac");
 
@@ -15,7 +15,7 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ error: "Email dan password wajib diisi" });
     }
 
-    const user = await get("SELECT * FROM users WHERE email = ?", [email]);
+    const user = await db("users").where({ email }).first();
 
     if (!user) {
       return res.status(401).json({ error: "Email atau password salah" });
@@ -46,6 +46,8 @@ router.post("/login", async (req, res) => {
         nama: user.nama,
         email: user.email,
         role: user.role,
+        avatar: user.avatar,
+        no_telp: user.no_telp
       },
     });
   } catch (error) {
@@ -63,7 +65,7 @@ router.post("/register", authenticateToken, requireRole(["admin_bgn"]), async (r
       return res.status(400).json({ error: "Nama, email, dan password wajib diisi" });
     }
 
-    const existingUser = await get("SELECT id FROM users WHERE email = ?", [email]);
+    const existingUser = await db("users").where({ email }).first();
 
     if (existingUser) {
       return res.status(409).json({ error: "Email sudah terdaftar" });
@@ -71,11 +73,16 @@ router.post("/register", authenticateToken, requireRole(["admin_bgn"]), async (r
 
     const hashPassword = bcrypt.hashSync(password, 10);
 
-    const result = await run("INSERT INTO users (nama, email, password_hash, role) VALUES (?, ?, ?, ?)", [nama, email, hashPassword, role || "admin_daerah"]);
+    const [userId] = await db("users").insert({
+      nama,
+      email,
+      password_hash: hashPassword,
+      role: role || "admin_daerah"
+    }).returning("id");
 
     res.status(201).json({
       message: "User berhasil didaftarkan",
-      userId: result.lastID,
+      userId: typeof userId === 'object' ? userId.id : userId,
     });
   } catch (error) {
     console.error("Register error:", error);
@@ -84,9 +91,12 @@ router.post("/register", authenticateToken, requireRole(["admin_bgn"]), async (r
 });
 
 // Get current user
-router.get("/me", require("../middleware/auth").authenticateToken, async (req, res) => {
+router.get("/me", authenticateToken, async (req, res) => {
   try {
-    const user = await get("SELECT id, nama, email, role, created_at FROM users WHERE id = ?", [req.user.id]);
+    const user = await db("users")
+      .select("id", "nama", "email", "role", "created_at", "avatar", "no_telp")
+      .where({ id: req.user.id })
+      .first();
     res.json(user);
   } catch (error) {
     res.status(500).json({ error: "Terjadi kesalahan server" });

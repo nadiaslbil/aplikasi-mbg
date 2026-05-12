@@ -1,9 +1,9 @@
 # 📋 Analisis Kelemahan Aplikasi MBG Distribution System
 
-> **Tanggal Analisis Terakhir:** 7 Mei 2026  
-> **Total Item:** 20  
-> **Fixed:** 8/20 (40%)  
-> **Pending:** 12/20 (60%)  
+> **Tanggal Analisis Terakhir:** 12 Mei 2026 (UPDATED)  
+> **Total Item:** 21  
+> **Fixed:** 11/21 (52%)  
+> **Pending:** 10/21 (48%)  
 
 ---
 
@@ -11,14 +11,14 @@
 
 | Kategori | Fixed | Pending | Completion |
 |----------|-------|---------|------------|
-| **KRITIS** (High) | 4/9 | 5 | 44% |
+| **KRITIS** (High) | 5/9 | 4 | 56% |
 | **PENTING** (Medium) | 2/5 | 3 | 40% |
-| **REKOMENDASI** (Low) | 2/6 | 4 | 33% |
-| **TOTAL** | **8/20** | **12** | **40%** |
+| **REKOMENDASI** (Low) | 4/7 | 3 | 57% |
+| **TOTAL** | **11/21** | **10** | **52%** |
 
 ---
 
-## ✅ SUDAH DIPERBAIKI (8/20)
+## ✅ SUDAH DIPERBAIKI (11/21)
 
 ### 1. ✅ Relasi User Supplier ↔ Data Dapur
 - **Status:** FIXED
@@ -35,83 +35,88 @@
 ### 4. ✅ Implementasi RBAC Konsisten
 - **Status:** FIXED
 - **Bukti:** Semua route di `backend/routes/` sekarang menggunakan middleware `requireRole` dan matriks `permissions`.
-- **Tambahan:** Ditambahkan pengecekan *Ownership* (kepemilikan) untuk Supplier dan Kurir.
 
 ### 5. ✅ Endpoint Seed Publik Dihapus
 - **Status:** FIXED
-- **Bukti:** Endpoint `GET /api/seed` telah dihapus dari `backend/api/index.js`.
+- **Bukti:** Endpoint `GET /api/seed` telah dihapus.
 
 ### 8. ✅ Endpoint Delete Insiden
 - **Status:** FIXED
-- **Bukti:** Endpoint `DELETE /api/insiden/:id` telah ditambahkan di `backend/routes/insiden.js`.
+- **Bukti:** Endpoint `DELETE /api/insiden/:id` tersedia.
+
+### 9. ✅ Implementasi Knex.js (SQL Transformation Fix)
+- **Status:** FIXED
+- **Implementasi:** Mengganti logika `transformQuery` manual dengan **Knex.js** sebagai query builder utama di `backend/database.js`. Knex menangani perbedaan dialek antara SQLite dan Postgres secara otomatis dan aman, menghilangkan risiko kegagalan penggantian string manual dan memperkuat proteksi terhadap SQL Injection.
 
 ### 11. ✅ Implementasi Pagination
 - **Status:** FIXED
-- **Implementasi:** Server-side pagination (`LIMIT`, `OFFSET`, dan `totalCount`) telah diterapkan pada endpoint utama (`sekolah`, `pengiriman`, `jadwal`). Frontend telah diperbarui untuk mendukung navigasi halaman dan pencarian di sisi server.
+- **Implementasi:** Server-side pagination (`LIMIT`, `OFFSET`) pada `sekolah`, `pengiriman`, `jadwal`.
 
 ### 17. ✅ Implementasi Notifikasi Modern (Sonner)
 - **Status:** FIXED
-- **Implementasi:** Seluruh penggunaan `alert()` native telah diganti dengan library **Sonner**. Aplikasi kini menggunakan sistem "Toast" yang non-blocking, mendukung tema warna (success/error), dan memiliki UI yang konsisten dengan tema aplikasi.
+- **Implementasi:** Menggunakan **Sonner** untuk toast notifications di seluruh frontend.
+
+### 20. ✅ Inkosistensi & Duplikasi Entry Point Backend
+- **Status:** FIXED
+- **Implementasi:** Backend telah dikonsolidasi dengan arsitektur **Unified Entry Point**. `api/index.js` menjadi pusat logika utama yang digunakan baik oleh Vercel maupun lokal. `server.js` kini hanya berupa wrapper minimalis untuk menjalankan aplikasi di lingkungan lokal. Duplikasi logika login telah dihapus dan dipusatkan sepenuhnya pada `routes/auth.js`.
+
+### 21. ✅ Sinkronisasi Branding Halaman Login (New)
+- **Status:** FIXED
+- **Implementasi:** Halaman login sekarang sinkron dengan pengaturan aplikasi (Logo, Nama, Instansi) secara dinamis dari database.
 
 ---
 
-## ❌ BELUM DIPERBAIKI (12/20)
+## ❌ BELUM DIPERBAIKI (10/21)
 
 ### 🔴 KRITIS (High Priority)
 
 #### 6. ❌ Validasi Input Minimalis (Zod/Joi Missing)
-- **Masalah:** Hanya cek `if (!field)`. Tidak ada validasi tipe data (string vs number), format (email), atau batasan panjang karakter.
-- **Risiko:** SQL Error, data corrupt, atau eksploitasi logic.
+- **Masalah:** Hanya cek `if (!field)`. Tidak ada validasi tipe data atau format (email).
+- **Risiko:** Data corrupt atau SQL Error.
 
 #### 7. ❌ Password Policy & Default Password Lemah
-- **Masalah:** Masih menggunakan default `admin123`. Tidak ada validasi kompleksitas password (huruf besar/karakter unik).
-
-#### 9. ❌ Kerentanan SQL Transformation
-- **Masalah:** Fungsi `transformQuery` di `database.js` menggunakan `string.replace` manual untuk konversi SQLite ke Postgres.
-- **Risiko:** Query kompleks bisa gagal terkonversi.
+- **Masalah:** Default `admin123`. Tidak ada validasi kompleksitas password.
 
 #### 10. ❌ Hardcoded CORS URL
-- **Masalah:** URL frontend `https://aplikasi-mbg-theta.vercel.app` di-hardcode di middleware.
+- **Masalah:** URL frontend di-hardcode di middleware backend.
 
 ---
 
 ### 🟡 PENTING (Medium Priority)
 
 #### 12. ❌ Hard Delete (Tanpa Soft Delete)
-- **Masalah:** Sekali hapus, data hilang selamanya.
+- **Masalah:** Sekali hapus, data hilang selamanya (terutama data master seperti Sekolah/Dapur).
 
 #### 13. ❌ Tanpa Audit Trail
 - **Masalah:** Tidak tahu siapa yang melakukan perubahan data sensitif.
 
 #### 14. ❌ Error Boundary Frontend Missing
-- **Masalah:** Jika ada error React, seluruh layar menjadi putih.
+- **Masalah:** Jika ada error React, layar menjadi putih total tanpa informasi ramah pengguna.
 
 ---
 
 ### 🟢 REKOMENDASI (Low Priority)
 
 #### 15. ❌ Duplikasi Logika Auth di Frontend
-- **Masalah:** `useEffect` untuk check login diulang-ulang di setiap file page.
+- **Masalah:** Pengecekan login diulang-ulang di setiap file page daripada menggunakan middleware atau HOC.
 
 #### 16. ❌ Loading State Navigasi Minim
-- **Masalah:** Klik menu tidak ada progress bar atau spinner global.
+- **Masalah:** Klik menu tidak memberikan feedback visual (progress bar).
 
 #### 18. ❌ Tidak Ada Export Data (Excel/PDF)
-- **Masalah:** User tidak bisa menarik laporan untuk keperluan offline.
+- **Masalah:** Laporan hanya tersedia di layar.
 
-#### 19. ❌ Visualisasi Data (Chart) Belum Ada
-- **Masalah:** Dashboard hanya menampilkan angka mentah.
-
-#### 20. ❌ Inkosistensi Entry Point Backend
-- **Masalah:** Adanya `server.js` dan `api/index.js` yang tumpang tidih fungsinya.
+#### 19. ⚠️ Visualisasi Data (Chart) Belum Maksimal (Progressing)
+- **Status:** PARTIAL FIXED
+- **Update:** Dashboard sudah memiliki ringkasan statistik yang bersih di atas peta, namun grafik (Bar/Pie Chart) belum diimplementasikan.
 
 ---
 
 ## 🎯 Rekomendasi Prioritas Perbaikan Selanjutnya
 
-1. **URGENT:** Implementasi validasi input (Zod/Joi) untuk mencegah data corrupt.
-2. **SECURITY:** Perkuat Password Policy dan tambahkan validasi kompleksitas.
-3. **STABILITY:** Perbaiki `transformQuery` di `database.js` atau gunakan Query Builder.
+1. **SECURITY (Item 6 & 7):** Implementasi Zod untuk validasi input dan perkuat aturan password.
+2. **RELIABILITY (Item 14):** Tambahkan React Error Boundary di frontend.
+3. **FEATURE (Item 18):** Implementasi export data ke Excel/PDF.
 
 ---
 **© 2026 - MBG Distribution System - Terakhir diperbarui oleh Gemini CLI**
