@@ -82,7 +82,7 @@ const permissions = {
     read: ['admin_bgn', 'admin_daerah', 'kurir', 'supplier'],
     readAll: ['admin_bgn', 'admin_daerah'],
     readOwn: ['kurir', 'supplier'],
-    create: ['admin_bgn', 'admin_daerah'],
+    create: ['admin_bgn', 'admin_daerah', 'kurir'],
     update: ['admin_bgn', 'admin_daerah'],
     updateStatus: ['admin_bgn', 'admin_daerah', 'kurir'], // Kurir bisa update status & upload foto
     delete: ['admin_bgn', 'admin_daerah'],

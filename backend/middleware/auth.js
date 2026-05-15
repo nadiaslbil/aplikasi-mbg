@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
+const { db } = require('../database');
 
-const authenticateToken = (req, res, next) => {
+const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
@@ -8,14 +9,27 @@ const authenticateToken = (req, res, next) => {
     return res.status(401).json({ error: 'Token tidak tersedia' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(401).json({ error: 'Token tidak valid atau sudah expired' });
+  try {
+    // Check if token is blacklisted
+    const isBlacklisted = await db('token_blacklist').where({ token }).first();
+    if (isBlacklisted) {
+      return res.status(401).json({ error: 'Sesi sudah berakhir. Silakan login kembali.' });
     }
 
-    req.user = user;
-    next();
-  });
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+      if (err) {
+        return res.status(401).json({ error: 'Token tidak valid atau sudah expired' });
+      }
+
+      req.user = user;
+      // Store token in request for logout use
+      req.token = token;
+      next();
+    });
+  } catch (error) {
+    console.error('Auth middleware error:', error);
+    res.status(500).json({ error: 'Terjadi kesalahan pada sistem autentikasi' });
+  }
 };
 
 const authorizeRoles = (...roles) => {

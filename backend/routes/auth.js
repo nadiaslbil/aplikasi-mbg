@@ -7,9 +7,10 @@ const { authenticateToken } = require("../middleware/auth");
 const { requireRole } = require("../middleware/rbac");
 const { loginSchema, registerSchema, validate } = require("../validation/schemas");
 const { logAudit } = require("../middleware/audit");
+const { loginLimiter } = require("../middleware/rate-limiter");
 
 // Login
-router.post("/login", validate(loginSchema), async (req, res) => {
+router.post("/login", loginLimiter, validate(loginSchema), async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -100,6 +101,35 @@ router.get("/me", authenticateToken, async (req, res) => {
       .first();
     res.json(user);
   } catch (error) {
+    res.status(500).json({ error: "Terjadi kesalahan server" });
+  }
+});
+
+// Logout (Blacklist token)
+router.post("/logout", authenticateToken, async (req, res) => {
+  try {
+    const token = req.token;
+    const decoded = req.user; // Already decoded by middleware
+
+    // Calculate expiration time (from JWT exp claim)
+    const expiresAt = new Date(decoded.exp * 1000);
+
+    // Add to blacklist
+    await db("token_blacklist").insert({
+      token,
+      expires_at: expiresAt
+    });
+
+    // Log logout action
+    await logAudit({
+      user_id: decoded.id,
+      action: 'LOGOUT',
+      req
+    });
+
+    res.json({ message: "Logout berhasil" });
+  } catch (error) {
+    console.error("Logout error:", error);
     res.status(500).json({ error: "Terjadi kesalahan server" });
   }
 });

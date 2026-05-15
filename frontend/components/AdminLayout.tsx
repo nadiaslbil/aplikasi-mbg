@@ -224,7 +224,7 @@ export default function AdminLayout({ children, currentPage, title, description 
                     <Link href="/dashboard/profile" className="flex items-center gap-2.5 px-4 py-2 text-sm text-zinc-600 hover:bg-zinc-50 hover:text-blue-600 transition-colors">
                       <User size={16} /> Profil Saya
                     </Link>
-                    {(isKurir || user?.role === 'admin_bgn') && (
+                    {user?.role === 'admin_bgn' && (
                       <Link href="/dashboard/settings" className="flex items-center gap-2.5 px-4 py-2 text-sm text-zinc-600 hover:bg-zinc-50 hover:text-blue-600 transition-colors">
                         <Settings size={16} /> Pengaturan
                       </Link>

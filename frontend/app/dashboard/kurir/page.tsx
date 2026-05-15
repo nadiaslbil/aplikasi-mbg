@@ -313,36 +313,53 @@ export default function KurirPage() {
 
   return (
     <AdminLayout currentPage="/dashboard/kurir" title="Portal Kurir" description="Kelola pengiriman harian Anda">
-      {/* Quick Status Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+      {/* GPS Status Banner */}
+      <div className={`mb-6 p-4 rounded-2xl border transition-all duration-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
+        isTracking 
+          ? 'bg-blue-50 border-blue-100' 
+          : 'bg-zinc-50 border-zinc-200 shadow-sm'
+      }`}>
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-white border border-zinc-200 rounded-2xl flex items-center justify-center shadow-sm"> 
-            <User size={24} className="text-zinc-600" />
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${
+            isTracking 
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' 
+              : 'bg-zinc-400 text-white shadow-sm'
+          }`}>
+            <Signal size={24} className={isTracking ? 'animate-pulse' : ''} />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-zinc-900 leading-tight">{user?.nama || 'Kurir'}</h2>
-            <div className="flex items-center gap-2 mt-0.5">
-              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-zinc-300'}`} />
-              <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
-                {isConnected ? 'Sistem Online' : 'Sistem Offline'}
-              </span>
+            <div className="flex items-center gap-2">
+              <p className={`text-[10px] font-black uppercase tracking-[0.1em] ${isTracking ? 'text-blue-600' : 'text-zinc-500'}`}>
+                Status Pelacakan GPS
+              </p>
+              {isTracking && (
+                <span className="flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-blue-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
+                </span>
+              )}
             </div>
+            <p className="text-sm font-bold text-zinc-900 mt-0.5">
+              {isTracking ? 'Lokasi Anda sedang dipantau secara real-time' : 'GPS tidak aktif - Klik mulai untuk melacak'}
+            </p>
           </div>
         </div>
-
-        <div className="flex items-center gap-2 bg-white p-1.5 border border-zinc-200 rounded-xl shadow-sm">
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${isTracking ? 'bg-emerald-50 text-emerald-700' : 'bg-zinc-50 text-zinc-500'}`}>
-            <Signal size={14} className={isTracking ? 'animate-pulse' : ''} />
-            <span className="text-xs font-bold uppercase tracking-tight">
-              {isTracking ? 'GPS Aktif' : 'GPS Mati'}
-            </span>
-          </div>
-          {!isTracking ? (
-            <button onClick={startTracking} className="btn-primary py-1.5 text-xs px-3">Mulai</button>
-          ) : (
-            <button onClick={stopTracking} className="btn-secondary py-1.5 text-xs px-3 text-red-600 border-red-100 hover:bg-red-50">Stop</button>
-          )}
-        </div>
+        
+        {!isTracking ? (
+          <button 
+            onClick={startTracking} 
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl text-sm font-bold transition-all shadow-md shadow-blue-200 active:scale-95"
+          >
+            <Play size={18} fill="currentColor" /> Mulai Melacak
+          </button>
+        ) : (
+          <button 
+            onClick={stopTracking} 
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white hover:bg-zinc-50 text-zinc-600 border border-zinc-200 px-6 py-3 rounded-xl text-sm font-bold transition-all shadow-sm active:scale-95"
+          >
+            <StopCircle size={18} /> Hentikan GPS
+          </button>
+        )}
       </div>
 
       {locationError && (

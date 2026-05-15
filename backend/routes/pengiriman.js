@@ -111,6 +111,28 @@ router.post('/', authenticateToken, requireRole(permissions.pengiriman.create), 
   try {
     const { jadwal_id, kurir_id } = req.body;
 
+    // Safety check for courier role
+    if (req.user.role === 'kurir') {
+      const assignedKurirId = parseInt(kurir_id);
+      if (assignedKurirId !== req.user.id) {
+        return res.status(403).json({ error: 'Anda hanya bisa membuat pengiriman atas nama Anda sendiri' });
+      }
+
+      // Check if this schedule belongs to a kitchen this courier is assigned to
+      const schedule = await db('jadwal_distribusi').where({ id: jadwal_id }).first();
+      if (!schedule) {
+        return res.status(404).json({ error: 'Jadwal tidak ditemukan' });
+      }
+
+      const isAssigned = await db('dapur_kurir')
+        .where({ kurir_id: req.user.id, dapur_id: schedule.dapur_id, status: 'aktif' })
+        .first();
+      
+      if (!isAssigned) {
+        return res.status(403).json({ error: 'Anda tidak ditugaskan di dapur yang melayani jadwal ini' });
+      }
+    }
+
     const [id] = await db('pengiriman').insert({
       jadwal_id,
       kurir_id,

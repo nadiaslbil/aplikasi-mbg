@@ -4,9 +4,13 @@ const dotenv = require("dotenv");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { uploadsDir } = require("../middleware/upload");
+const { apiLimiter } = require("../middleware/rate-limiter");
 
 dotenv.config();
 const app = express();
+
+// Global API Limiter
+app.use("/api", apiLimiter);
 
 // Jamin CORS dari Theta & Local
 const allowedOrigins = [

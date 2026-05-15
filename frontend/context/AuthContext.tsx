@@ -55,13 +55,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(newUser);
   };
 
-  const logout = () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
+  const logout = async () => {
+    try {
+      // Call backend logout to blacklist the token
+      if (token) {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/auth/logout`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (!response.ok) {
+          console.warn('Backend logout failed, but clearing local session anyway');
+        }
+      }
+    } catch (error) {
+      console.error('Error during logout:', error);
+    } finally {
+      // Always clear local session
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+      }
+      setToken(null);
+      setUser(null);
     }
-    setToken(null);
-    setUser(null);
   };
 
   return <AuthContext.Provider value={{ user, token, login, updateUser, logout, isAuthenticated: !!token, isLoading }}>{children}</AuthContext.Provider>;
