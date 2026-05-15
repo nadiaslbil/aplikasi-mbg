@@ -10,6 +10,7 @@ import { API_URL } from '@/lib/config';
 import { useLiveTracking } from '@/hooks/useLiveTracking';
 import { usePermissions } from '@/hooks/usePermissions';
 import PengirimanUpdateForm from '@/components/PengirimanUpdateForm';
+import CourierMapWrapper from '@/components/CourierMapWrapper';
 import {
   Truck,
   CheckCircle2,
@@ -29,6 +30,10 @@ import {
   ExternalLink,
   Signal,
   User,
+  Map as MapIcon,
+  Play,
+  AlertCircle,
+  Plus,
 } from 'lucide-react';
 
 interface TugasPengiriman {
@@ -49,6 +54,30 @@ interface TugasPengiriman {
   sekolah_longitude: number;
 }
 
+interface JadwalHariIni {
+  id: number;
+  dapur_id: number;
+  sekolah_id: number;
+  sekolah_nama: string;
+  sekolah_alamat: string;
+  sekolah_latitude: number;
+  sekolah_longitude: number;
+  tanggal: string;
+  waktu_kirim: string;
+  jumlah_porsi: number;
+  status: string;
+  dapur_nama: string;
+}
+
+interface Insiden {
+  id: number;
+  tipe: string;
+  deskripsi: string;
+  status: string;
+  tanggal: string;
+  sekolah_nama?: string;
+}
+
 interface SekolahInfo {
   id: number;
   nama: string;
@@ -58,17 +87,25 @@ interface SekolahInfo {
   jumlah_porsi: number;
 }
 
-type TabType = 'tugas' | 'riwayat' | 'info';
+type TabType = 'tugas' | 'peta' | 'riwayat' | 'insiden' | 'info';
 
 export default function KurirPage() {
   const { user } = useAuth();
   const { sendLocation, isConnected } = useLiveTracking();
 
   const [tugasList, setTugasList] = useState<TugasPengiriman[]>([]);
+  const [jadwalList, setJadwalList] = useState<JadwalHariIni[]>([]);
+  const [insidenList, setInsidenList] = useState<Insiden[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>('tugas');
   const [dapurSekolahList, setDapurSekolahList] = useState<SekolahInfo[]>([]);
   const [dapurInfo, setDapurInfo] = useState<{ id: number; nama: string } | null>(null);
+
+  // Insiden Form
+  const [showInsidenModal, setShowInsidenModal] = useState(false);
+  const [insidenTipe, setInsidenTipe] = useState('keterlambatan');
+  const [insidenSekolahId, setInsidenSekolahId] = useState('');
+  const [insidenDeskripsi, setInsidenDeskripsi] = useState('');
 
   // Location state
   const [currentLat, setCurrentLat] = useState<number | null>(null);
@@ -90,10 +127,11 @@ export default function KurirPage() {
 
   const activeTasks = useMemo(() => tugasList.filter(t => t.status === 'dalam_perjalanan'), [tugasList]);
   const historyTasks = useMemo(() => tugasList.filter(t => t.status !== 'dalam_perjalanan'), [tugasList]);
+  const availableSchedules = useMemo(() => jadwalList.filter(j => j.status === 'terjadwal'), [jadwalList]);
   const activeTaskForGPS = useMemo(() => activeTasks[0] || null, [activeTasks]);
 
   useEffect(() => {
-    fetchTugas();
+    fetchAllData();
   }, []);
 
   // Auto-send location every 15s when tracking.
@@ -122,16 +160,27 @@ export default function KurirPage() {
     };
   }, [watchId]);
 
-  const fetchTugas = async () => {
+  const fetchAllData = async () => {
+    setLoading(true);
     try {
-      const response = await api.get('/pengiriman', { params: { limit: 100 } });
-      setTugasList(response.data.data);
+      const today = new Date().toISOString().split('T')[0];
+      
+      const [pengirimanRes, jadwalRes, insidenRes] = await Promise.all([
+        api.get('/pengiriman', { params: { limit: 100 } }),
+        api.get('/jadwal', { params: { tanggal: today, status: 'terjadwal', limit: 50 } }),
+        api.get('/insiden', { params: { limit: 20 } })
+      ]);
+
+      setTugasList(pengirimanRes.data.data);
+      setJadwalList(jadwalRes.data.data);
+      setInsidenList(Array.isArray(insidenRes.data) ? insidenRes.data : []);
 
       if (user?.id) {
         try {
           const dapurKurirRes = await api.get('/dapur-kurir', { params: { kurir_id: user.id } });
-          if (Array.isArray(dapurKurirRes.data) && dapurKurirRes.data.length > 0) {
-            const firstDapur = dapurKurirRes.data[0];
+          const dkData = Array.isArray(dapurKurirRes.data) ? dapurKurirRes.data : (dapurKurirRes.data?.data || []);
+          if (dkData.length > 0) {
+            const firstDapur = dkData[0];
             setDapurInfo({ id: firstDapur.dapur_id, nama: firstDapur.dapur_nama });
             const sekolahRes = await api.get(`/dapur/${firstDapur.dapur_id}/sekolah`);
             setDapurSekolahList(sekolahRes.data);
@@ -141,7 +190,7 @@ export default function KurirPage() {
         }
       }
     } catch (error) { 
-      console.error('Error:', error); 
+      console.error('Error fetching data:', error); 
     }
     finally { setLoading(false); }
   };
@@ -204,9 +253,43 @@ export default function KurirPage() {
 
       toast.success('Status berhasil diperbarui');
       setShowModal(false);
-      fetchTugas();
+      fetchAllData();
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Gagal update pengiriman');
+    }
+  };
+
+  const handleMulaiKirim = async (jadwalId: number) => {
+    try {
+      await api.post('/pengiriman', {
+        jadwal_id: jadwalId,
+        kurir_id: user?.id,
+      });
+      toast.success('Pengiriman dimulai');
+      fetchAllData();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Gagal memulai pengiriman');
+    }
+  };
+
+  const handleSubmitInsiden = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await api.post('/insiden', {
+        tipe: insidenTipe,
+        sekolah_id: insidenSekolahId || null,
+        dapur_id: dapurInfo?.id,
+        deskripsi: insidenDeskripsi,
+        tanggal: new Date().toISOString().split('T')[0],
+        latitude: currentLat,
+        longitude: currentLng,
+      });
+      toast.success('Laporan insiden terkirim');
+      setShowInsidenModal(false);
+      setInsidenDeskripsi('');
+      fetchAllData();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Gagal mengirim laporan');
     }
   };
 
@@ -233,7 +316,7 @@ export default function KurirPage() {
       {/* Quick Status Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-white border border-zinc-200 rounded-2xl flex items-center justify-center shadow-sm">
+          <div className="w-12 h-12 bg-white border border-zinc-200 rounded-2xl flex items-center justify-center shadow-sm"> 
             <User size={24} className="text-zinc-600" />
           </div>
           <div>
@@ -263,7 +346,7 @@ export default function KurirPage() {
       </div>
 
       {locationError && (
-        <div className="mb-6 p-3 bg-red-50 border border-red-100 rounded-xl flex items-center gap-3 text-red-700 text-sm">
+        <div className="mb-6 p-3 bg-red-50 border border-red-100 rounded-xl flex items-center gap-3 text-red-700 text-sm">   
           <AlertTriangle size={18} className="flex-shrink-0" />
           <p className="font-medium">{locationError}</p>
         </div>
@@ -272,8 +355,10 @@ export default function KurirPage() {
       {/* Tabs */}
       <div className="flex p-1 bg-zinc-100 rounded-xl mb-6">
         {[
-          { id: 'tugas', label: 'Tugas', icon: Truck, count: activeTasks.length },
+          { id: 'tugas', label: 'Tugas', icon: Truck, count: activeTasks.length + availableSchedules.length },
+          { id: 'peta', label: 'Peta', icon: MapIcon },
           { id: 'riwayat', label: 'Riwayat', icon: History, count: historyTasks.length },
+          { id: 'insiden', label: 'Insiden', icon: AlertCircle, count: insidenList.filter(i => i.status === 'dilaporkan').length },
           { id: 'info', label: 'Sekolah', icon: Info },
         ].map((tab) => {
           const Icon = tab.icon;
@@ -287,7 +372,7 @@ export default function KurirPage() {
               }`}
             >
               <Icon size={16} />
-              {tab.label}
+              <span className="hidden sm:inline">{tab.label}</span>
               {tab.count !== undefined && tab.count > 0 && (
                 <span className={`px-1.5 py-0.5 rounded-md text-[10px] ${isActive ? 'bg-blue-100 text-blue-700' : 'bg-zinc-200 text-zinc-600'}`}>
                   {tab.count}
@@ -302,70 +387,91 @@ export default function KurirPage() {
       <div className="space-y-4">
         {loading ? (
           <div className="py-20 text-center">
-            <div className="animate-spin w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full mx-auto mb-4" />
+            <div className="animate-spin w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full mx-auto mb-4" /> 
             <p className="text-zinc-500 font-medium">Memperbarui data...</p>
           </div>
         ) : activeTab === 'tugas' ? (
-          activeTasks.length === 0 ? (
-            <div className="bg-white border border-zinc-200 rounded-2xl p-12 text-center shadow-sm">
-              <div className="w-16 h-16 bg-zinc-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle2 size={32} className="text-zinc-300" />
+          <div className="space-y-4">
+            {/* Active Tasks */}
+            {activeTasks.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-zinc-400 uppercase tracking-widest px-1">Sedang Dikirim</p>
+                {activeTasks.map((tugas) => (
+                  <div key={tugas.id} className="bg-white border-2 border-blue-100 rounded-2xl overflow-hidden shadow-sm animate-fadeIn">
+                    <div className="p-5">
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <Truck size={20} className="text-white" />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-zinc-900 leading-tight">{tugas.sekolah_nama}</h3>
+                            <p className="text-xs font-medium text-zinc-500 mt-0.5 uppercase tracking-wide">{tugas.dapur_nama}</p>
+                          </div>
+                        </div>
+                        <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md">AKTIF</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button onClick={() => setActiveTab('peta')} className="flex items-center justify-center gap-2 py-2.5 bg-zinc-900 text-white rounded-xl text-sm font-bold transition-all">
+                          <MapIcon size={16} /> Lihat Peta
+                        </button>
+                        <button onClick={() => handleUpdate(tugas)} className="flex items-center justify-center gap-2 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold transition-all">
+                          <CheckCircle2 size={16} /> Selesaikan
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <h3 className="text-lg font-bold text-zinc-900">Semua tugas selesai</h3>
-              <p className="text-zinc-500 text-sm mt-1">Tidak ada pengiriman aktif untuk saat ini.</p>
-            </div>
-          ) : (
-            activeTasks.map((tugas) => (
-              <div key={tugas.id} className="bg-white border border-zinc-200 rounded-2xl overflow-hidden shadow-sm hover:border-zinc-300 transition-all">
-                <div className="p-5">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 bg-orange-50 border border-orange-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                        <Truck size={20} className="text-orange-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-zinc-900 leading-tight">{tugas.sekolah_nama}</h3>
-                        <p className="text-xs font-medium text-zinc-500 mt-0.5 uppercase tracking-wide">{tugas.dapur_nama}</p>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end">
-                      <span className="text-xs font-bold text-zinc-900 bg-zinc-100 px-2 py-1 rounded-md">
-                        {tugas.waktu_kirim || '--:--'}
-                      </span>
-                    </div>
-                  </div>
+            )}
 
-                  <div className="space-y-2 mb-5">
-                    <div className="flex items-center gap-2.5 text-zinc-600">
-                      <MapPin size={14} className="text-zinc-400" />
-                      <span className="text-sm line-clamp-1">{tugas.sekolah_alamat || 'Alamat tidak tersedia'}</span>
-                    </div>
-                    <div className="flex items-center gap-2.5 text-zinc-600">
-                      <Calendar size={14} className="text-zinc-400" />
-                      <span className="text-sm">
-                        {new Date(tugas.tanggal).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' })}
-                      </span>
-                    </div>
+            {/* Schedules */}
+            <div className="space-y-3">
+              <p className="text-xs font-semibold text-zinc-400 uppercase tracking-widest px-1">Jadwal Hari Ini</p>
+              {availableSchedules.length === 0 && activeTasks.length === 0 ? (
+                <div className="bg-white border border-zinc-200 rounded-2xl p-12 text-center shadow-sm">
+                  <div className="w-16 h-16 bg-zinc-50 rounded-full flex items-center justify-center mx-auto mb-4 text-zinc-300">
+                    <Calendar size={32} />
                   </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={() => openInMaps(tugas.sekolah_latitude, tugas.sekolah_longitude)}
-                      className="flex items-center justify-center gap-2 py-2.5 bg-zinc-900 text-white rounded-xl text-sm font-bold hover:bg-zinc-800 transition-all"
-                    >
-                      <Navigation size={16} /> Buka Maps
-                    </button>
-                    <button
-                      onClick={() => handleUpdate(tugas)}
-                      className="flex items-center justify-center gap-2 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all"
-                    >
-                      <CheckCircle2 size={16} /> Selesaikan
-                    </button>
-                  </div>
+                  <h3 className="text-lg font-bold text-zinc-900">Tidak ada jadwal</h3>
+                  <p className="text-zinc-500 text-sm mt-1">Belum ada tugas hari ini.</p>
                 </div>
-              </div>
-            ))
-          )
+              ) : (
+                availableSchedules.map((jadwal) => (
+                  <div key={jadwal.id} className="bg-white border border-zinc-200 rounded-2xl overflow-hidden shadow-sm hover:border-zinc-300 transition-all">
+                    <div className="p-5">
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 bg-zinc-50 border border-zinc-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <School size={20} className="text-zinc-600" />
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-zinc-900 leading-tight">{jadwal.sekolah_nama}</h3>
+                            <p className="text-xs font-medium text-zinc-500 mt-0.5 uppercase tracking-wide">{jadwal.dapur_nama}</p>
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end">
+                          <span className="text-xs font-bold text-zinc-900 bg-zinc-100 px-2 py-1 rounded-md">
+                            {jadwal.waktu_kirim || '--:--'}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleMulaiKirim(jadwal.id)}
+                        className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all"
+                      >
+                        <Play size={16} fill="currentColor" /> Mulai Pengiriman
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        ) : activeTab === 'peta' ? (
+          <div className="animate-fadeIn">
+            <CourierMapWrapper tasks={activeTasks} currentLat={currentLat} currentLng={currentLng} />
+          </div>
         ) : activeTab === 'riwayat' ? (
           historyTasks.length === 0 ? (
             <div className="bg-white border border-zinc-200 rounded-2xl p-12 text-center shadow-sm">
@@ -386,7 +492,7 @@ export default function KurirPage() {
                       <div className="min-w-0">
                         <h4 className="font-bold text-zinc-900 text-sm truncate">{tugas.sekolah_nama}</h4>
                         <p className="text-xs text-zinc-500">
-                          {new Date(tugas.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} • {tugas.waktu_kirim}
+                          {new Date(tugas.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })} • {tugas.waktu_kirim}
                         </p>
                       </div>
                     </div>
@@ -405,6 +511,35 @@ export default function KurirPage() {
               </div>
             </div>
           )
+        ) : activeTab === 'insiden' ? (
+          <div className="space-y-4">
+            <button
+              onClick={() => setShowInsidenModal(true)}
+              className="w-full flex items-center justify-center gap-2 py-3 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-700 transition-all"
+            >
+              <Plus size={18} /> Laporkan Masalah
+            </button>
+            <div className="space-y-3">
+              {insidenList.map((insiden) => (
+                <div key={insiden.id} className="bg-white border border-zinc-200 rounded-2xl p-4 shadow-sm">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle size={16} className="text-red-500" />
+                      <h4 className="font-bold text-zinc-900 text-sm uppercase">{insiden.tipe.replace('_', ' ')}</h4>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase ${insiden.status === 'selesai' ? 'bg-emerald-100 text-emerald-700' : 'bg-zinc-100 text-zinc-600'}`}>
+                      {insiden.status}
+                    </span>
+                  </div>
+                  <p className="text-xs text-zinc-600 mb-2">{insiden.deskripsi}</p>
+                  <div className="flex items-center justify-between text-[10px] text-zinc-400 font-bold border-t border-zinc-50 pt-2">
+                    <span>{insiden.sekolah_nama || 'Lokasi Umum'}</span>
+                    <span>{new Date(insiden.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         ) : (
           /* Info Sekolah Tab */
           <div className="space-y-4">
@@ -432,18 +567,7 @@ export default function KurirPage() {
                   </div>
                   <div className="flex items-center gap-2 text-xs text-zinc-500">
                     <MapPin size={12} />
-                    <span className="truncate">{s.kecamatan} • {s.alamat}</span>
-                  </div>
-                  <div className="mt-3 flex gap-1.5 flex-wrap">
-                    {(() => {
-                      try {
-                        return JSON.parse(s.hari_kirim).map((h: string) => (
-                          <span key={h} className="px-2 py-0.5 bg-zinc-100 text-zinc-600 rounded text-[10px] font-bold uppercase">
-                            {h.substring(0, 3)}
-                          </span>
-                        ));
-                      } catch { return null; }
-                    })()}
+                    <span className="truncate">{s.kecamatan} ΓÇó {s.alamat}</span>
                   </div>
                 </div>
               ))}
@@ -452,11 +576,48 @@ export default function KurirPage() {
         )}
       </div>
 
+      {/* Insiden Modal */}
+      {showInsidenModal && (
+        <div className="fixed inset-0 bg-zinc-900/60 backdrop-blur-sm z-[2000] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fadeIn">
+          <div className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto relative">
+            <div className="sticky top-0 bg-white border-b border-zinc-100 px-6 py-5 flex items-center justify-between">    
+              <h2 className="text-xl font-bold text-zinc-900">Laporkan Masalah</h2>
+              <button onClick={() => setShowInsidenModal(false)} className="w-10 h-10 flex items-center justify-center bg-zinc-50 rounded-full text-zinc-400 hover:text-zinc-600 transition"><X size={20} /></button>
+            </div>
+            <form onSubmit={handleSubmitInsiden} className="p-6 space-y-4">
+              <div>
+                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2 block">Tipe Masalah</label>
+                <select value={insidenTipe} onChange={(e) => setInsidenTipe(e.target.value)} className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium">
+                  <option value="keterlambatan">Keterlambatan</option>
+                  <option value="kerusakan_makanan">Kerusakan Makanan</option>
+                  <option value="kurang_porsi">Kurang Porsi</option>
+                  <option value="kendaraan_rusak">Kendaraan Rusak</option>
+                  <option value="cuaca_buruk">Cuaca Buruk</option>
+                  <option value="lainnya">Lainnya</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2 block">Sekolah Terkait (Opsional)</label>
+                <select value={insidenSekolahId} onChange={(e) => setInsidenSekolahId(e.target.value)} className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium">  
+                  <option value="">Lokasi Umum / Tidak Ada</option>
+                  {dapurSekolahList.map(s => <option key={s.id} value={s.id}>{s.nama}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2 block">Deskripsi Masalah</label>
+                <textarea value={insidenDeskripsi} onChange={(e) => setInsidenDeskripsi(e.target.value)} className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium min-h-[120px]" placeholder="Jelaskan masalah secara detail..." required />
+              </div>
+              <button type="submit" className="w-full py-3 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-700 transition-all">Kirim Laporan</button>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Update Modal */}
       {showModal && selectedTugas && (
         <div className="fixed inset-0 bg-zinc-900/60 backdrop-blur-sm z-[2000] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fadeIn">
           <div className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto relative">
-            <div className="sticky top-0 bg-white border-b border-zinc-100 px-6 py-5 flex items-center justify-between">
+            <div className="sticky top-0 bg-white border-b border-zinc-100 px-6 py-5 flex items-center justify-between">     
               <div>
                 <h2 className="text-xl font-bold text-zinc-900">Selesaikan Tugas</h2>
                 <p className="text-sm font-medium text-zinc-500">{selectedTugas.sekolah_nama}</p>
@@ -473,7 +634,7 @@ export default function KurirPage() {
                     <Navigation size={20} className="text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Lokasi GPS Terkini</p>
+                    <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Lokasi GPS Terkini</p>       
                     <p className="text-sm font-bold text-blue-700 font-mono">
                       {currentLat?.toFixed(6) || '0.000000'}, {currentLng?.toFixed(6) || '0.000000'}
                     </p>

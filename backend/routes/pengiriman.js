@@ -195,7 +195,7 @@ router.put('/:id', authenticateToken, requireRole(permissions.pengiriman.updateS
 });
 
 // Update lokasi kurir (Khusus endpoint tracking GPS)
-router.put('/:id/location', authenticateToken, requireRole(permissions.pengiriman.updateStatus), async (req, res) => {
+router.put('/:id/location', authenticateToken, requireRole(permissions.pengiriman.updateStatus), async (req, res) => {       
   try {
     const { latitude, longitude, status, catatan } = req.body;
     const existing = await db('pengiriman').where({ id: req.params.id }).whereNull('deleted_at').first();

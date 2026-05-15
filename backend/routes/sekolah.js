@@ -13,13 +13,13 @@ router.get('/', authenticateToken, async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
-    
+
     let query = db('sekolah').whereNull('deleted_at');
 
     if (req.user?.role === 'supplier' || req.user?.role === 'kurir') {
       let accessibleDapurIds = [];
       if (req.user.role === 'supplier') {
-        const rows = await db('dapur_supplier').select('id').where({ user_id: req.user.id }).whereNull('deleted_at');
+        const rows = await db('dapur_supplier').select('id').where({ user_id: req.user.id }).whereNull('deleted_at');        
         accessibleDapurIds = rows.map((r) => r.id);
       } else {
         const rows = await db('dapur_kurir')
@@ -120,7 +120,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
       .where({ id: req.params.id })
       .whereNull('deleted_at')
       .first();
-    
+
     if (!sekolah) {
       return res.status(404).json({ error: 'Sekolah tidak ditemukan' });
     }
@@ -128,9 +128,9 @@ router.get('/:id', authenticateToken, async (req, res) => {
     const dapurRows = await db('dapur_sekolah')
       .join('dapur_supplier', 'dapur_sekolah.dapur_id', 'dapur_supplier.id')
       .select('dapur_supplier.nama as dapur_nama')
-      .where({ 
+      .where({
         'dapur_sekolah.sekolah_id': req.params.id,
-        'dapur_sekolah.status': 'aktif' 
+        'dapur_sekolah.status': 'aktif'
       })
       .whereNull('dapur_supplier.deleted_at')
       .orderBy('dapur_supplier.nama', 'asc');
@@ -145,19 +145,19 @@ router.get('/:id', authenticateToken, async (req, res) => {
 });
 
 // Create sekolah
-router.post('/', authenticateToken, requireRole(permissions.sekolah.create), validate(sekolahSchema), async (req, res) => {
+router.post('/', authenticateToken, requireRole(permissions.sekolah.create), validate(sekolahSchema), async (req, res) => {  
   try {
     const { nama, alamat, latitude, longitude, kecamatan, kabupaten, provinsi, jumlah_siswa, kontak } = req.body;
 
     const [id] = await db('sekolah').insert({
-      nama, 
-      alamat, 
-      latitude, 
-      longitude, 
-      kecamatan, 
-      kabupaten, 
-      provinsi, 
-      jumlah_siswa: jumlah_siswa || 0, 
+      nama,
+      alamat,
+      latitude,
+      longitude,
+      kecamatan,
+      kabupaten,
+      provinsi,
+      jumlah_siswa: jumlah_siswa || 0,
       kontak: kontak || null
     }).returning('id');
 
@@ -185,10 +185,10 @@ router.post('/', authenticateToken, requireRole(permissions.sekolah.create), val
 // Update sekolah
 router.put('/:id', authenticateToken, requireRole(permissions.sekolah.update), validate(sekolahSchema), async (req, res) => {
   try {
-    const { nama, alamat, latitude, longitude, kecamatan, kabupaten, provinsi, jumlah_siswa, kontak, status } = req.body;
+    const { nama, alamat, latitude, longitude, kecamatan, kabupaten, provinsi, jumlah_siswa, kontak, status } = req.body;    
 
     const existing = await db('sekolah').where({ id: req.params.id }).whereNull('deleted_at').first();
-    
+
     if (!existing) {
       return res.status(404).json({ error: 'Sekolah tidak ditemukan' });
     }
@@ -232,7 +232,7 @@ router.put('/:id', authenticateToken, requireRole(permissions.sekolah.update), v
 router.delete('/:id', authenticateToken, requireRole(permissions.sekolah.delete), async (req, res) => {
   try {
     const existing = await db('sekolah').where({ id: req.params.id }).whereNull('deleted_at').first();
-    
+
     if (!existing) {
       return res.status(404).json({ error: 'Sekolah tidak ditemukan' });
     }
