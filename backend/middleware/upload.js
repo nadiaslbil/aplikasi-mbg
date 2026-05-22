@@ -16,17 +16,8 @@ if (!fs.existsSync(uploadsDir)) {
   }
 }
 
-// Always use disk storage so uploaded files can be served by static route.
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadsDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    cb(null, `bukti-${uniqueSuffix}${ext}`);
-  }
-});
+// Gunakan memoryStorage agar file tidak disimpan di disk Vercel yang sementara
+const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
   const allowedTypes = /jpeg|jpg|png|gif|webp|heic|heif/;

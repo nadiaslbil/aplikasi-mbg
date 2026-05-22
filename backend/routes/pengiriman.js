@@ -58,11 +58,27 @@ router.get('/', authenticateToken, async (req, res) => {
     const totalCount = await query.clone().count('* as total').first();
     const total = totalCount.total;
 
-    const pengiriman = await query
-      .select('p.*', 'jd.tanggal', 'jd.waktu_kirim', 'ds.nama as dapur_nama', 's.nama as sekolah_nama')
+    const pengirimanRaw = await query
+      .select(
+        'p.*', 
+        'jd.tanggal', 
+        'jd.waktu_kirim', 
+        'ds.nama as dapur_nama', 
+        's.nama as sekolah_nama',
+        's.latitude as sekolah_latitude',
+        's.longitude as sekolah_longitude'
+      )
       .orderBy('p.created_at', 'desc')
       .limit(limit)
       .offset(offset);
+
+    const pengiriman = pengirimanRaw.map(p => ({
+      ...p,
+      sekolah_latitude: parseFloat(p.sekolah_latitude),
+      sekolah_longitude: parseFloat(p.sekolah_longitude),
+      latitude: p.latitude ? parseFloat(p.latitude) : null,
+      longitude: p.longitude ? parseFloat(p.longitude) : null
+    }));
 
     res.json({
       data: pengiriman,

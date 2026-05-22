@@ -584,7 +584,7 @@ export default function KurirPage() {
                   </div>
                   <div className="flex items-center gap-2 text-xs text-zinc-500">
                     <MapPin size={12} />
-                    <span className="truncate">{s.kecamatan} ΓÇó {s.alamat}</span>
+                    <span className="truncate">{s.kecamatan} • {s.alamat}</span>
                   </div>
                 </div>
               ))}
