@@ -8,6 +8,8 @@ import api from "@/lib/api";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { User, Mail, Phone, Lock, Save, Camera, Shield, CheckCircle } from "lucide-react";
+import UploadFoto from "@/components/UploadFoto";
+import { API_URL } from "@/lib/config";
 
 interface ProfileForm {
   nama: string;
@@ -23,8 +25,9 @@ export default function ProfilePage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
 
-  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<ProfileForm>();
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<ProfileForm>();
   const password = watch("password");
+  const avatarUrl = watch("avatar");
 
   useEffect(() => {
     if (user) {
@@ -63,6 +66,12 @@ export default function ProfilePage() {
     }
   };
 
+  const getFullAvatarUrl = (url: string) => {
+    if (!url) return null;
+    if (url.startsWith('http')) return url;
+    return `${API_URL}/uploads/${url}`;
+  };
+
   return (
     <AdminLayout
       currentPage="/dashboard/profile"
@@ -82,9 +91,9 @@ export default function ProfilePage() {
               <div className="flex items-end gap-4 -mt-10">
                 {/* Avatar */}
                 <div className="relative group flex-shrink-0">
-                  {watch("avatar") ? (
+                  {avatarUrl ? (
                     <img
-                      src={watch("avatar")}
+                      src={getFullAvatarUrl(avatarUrl) || ''}
                       alt="Avatar"
                       className="w-20 h-20 rounded-xl object-cover border-4 border-white shadow-md bg-white"
                     />
@@ -176,21 +185,16 @@ export default function ProfilePage() {
                     </div>
                   </div>
 
-                  {/* URL Avatar */}
+                  {/* Foto Profil */}
                   <div>
-                    <label className="form-label">URL Foto Profil</label>
-                    <div className="flex items-stretch border border-zinc-200 rounded-lg overflow-hidden hover:border-zinc-300 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/10 transition-all">
-                      <span className="flex items-center px-3 bg-zinc-50 border-r border-zinc-200 text-zinc-400 flex-shrink-0">
-                        <Camera size={14} />
-                      </span>
-                      <input
-                        {...register("avatar")}
-                        className="flex-1 px-3 py-2 text-sm bg-white outline-none text-zinc-800 placeholder:text-zinc-400"
-                        placeholder="https://link-foto.com/foto.jpg"
-                      />
-                    </div>
+                    <label className="form-label">Foto Profil</label>
+                    <UploadFoto 
+                      currentFoto={avatarUrl} 
+                      onUploadSuccess={(url) => setValue("avatar", url, { shouldDirty: true })} 
+                      maxFileSize={2}
+                    />
                     <p className="text-[11px] text-zinc-400 mt-1.5">
-                      Gunakan link URL gambar (misal dari Google Drive atau Imgur)
+                      Foto profil akan muncul di sidebar dan profil publik Anda.
                     </p>
                   </div>
                 </div>

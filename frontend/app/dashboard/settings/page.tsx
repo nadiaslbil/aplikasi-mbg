@@ -6,6 +6,7 @@ import { useSettings } from '@/context/SettingsContext';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { Save, Globe, Image as ImageIcon, Info, Map as MapIcon } from 'lucide-react';
+import UploadFoto from '@/components/UploadFoto';
 
 interface SettingsForm {
   app_name: string;
@@ -22,7 +23,7 @@ export default function SettingsPage() {
   const { settings, updateSettings, refreshSettings } = useSettings();
   const [saving, setSaving] = useState(false);
 
-  const { register, handleSubmit, formState: { isDirty } } = useForm<SettingsForm>({
+  const { register, handleSubmit, setValue, watch, formState: { isDirty } } = useForm<SettingsForm>({
     defaultValues: {
       app_name: settings.app_name,
       app_logo: settings.app_logo,
@@ -89,25 +90,15 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label className="form-label">URL Logo Aplikasi</label>
-                <div className="flex gap-4 items-start">
-                  <div className="flex-1">
-                    <input 
-                      {...register('app_logo')} 
-                      type="text" 
-                      className="input" 
-                      placeholder="Contoh: https://link-gambar.com/logo.png"
-                    />
-                    <p className="text-xs text-zinc-500 mt-1">
-                      Masukkan URL gambar (hosting di luar/Vercel Blob). Kosongkan untuk menggunakan icon default.
-                    </p>
-                  </div>
-                  {settings.app_logo && (
-                    <div className="w-12 h-12 border border-zinc-200 rounded-lg flex items-center justify-center bg-zinc-50 overflow-hidden">
-                      <img src={settings.app_logo} alt="Preview" className="max-w-full max-h-full object-contain" />
-                    </div>
-                  )}
-                </div>
+                <label className="form-label">Logo Aplikasi</label>
+                <UploadFoto 
+                  currentFoto={watch('app_logo')} 
+                  onUploadSuccess={(url) => setValue('app_logo', url, { shouldDirty: true })} 
+                  maxFileSize={2}
+                />
+                <p className="text-xs text-zinc-500 mt-2">
+                  Logo ini akan muncul di sidebar dan halaman login. Disarankan menggunakan gambar transparan (PNG).
+                </p>
               </div>
 
               <div>
